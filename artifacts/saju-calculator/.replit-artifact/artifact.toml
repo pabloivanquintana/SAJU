@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "SAJU Sales Calculator"
+version = "1.0.0"
+id = "artifacts/saju-calculator"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19996
+
+[services.development]
+run = "pnpm --filter @workspace/saju-calculator run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/saju-calculator", "run", "build" ]
+publicDir = "artifacts/saju-calculator/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19996"
+BASE_PATH = "/"

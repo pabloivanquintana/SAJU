@@ -1,0 +1,462 @@
+{
+  "appName": "SAJU Sales Calculator",
+  "version": "1.0",
+  
+  "clientTypes": {
+    "dependency": {
+      "name": "Relación de Dependencia",
+      "description": "Trabajador formal",
+      "minAntiquity": 12,
+      "calculationMethod": "salary_based",
+      "priceMultiplier": 1.0
+    },
+    "monotributo": {
+      "name": "Monotributista",
+      "description": "Trabajador independiente",
+      "categories": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K"],
+      "minPaymentMonths": 3,
+      "calculationMethod": "category_based",
+      "priceMultiplier": 1.35
+    },
+    "prepaid": {
+      "name": "Prepago Puro",
+      "description": "Sin relación laboral",
+      "calculationMethod": "age_based",
+      "priceMultiplier": 1.65
+    }
+  },
+
+  "plans": {
+    "SAJU1100": {
+      "id": "SAJU1100",
+      "name": "El Básico",
+      "coinsurance": true,
+      "pharmacyDiscount": 40,
+      "internationType": "shared",
+      "complexStudies": false,
+      "targetCustomer": "young_healthy",
+      "hospitalPrivateAccess": "with_coinsurance",
+      "description": "Joven con presupuesto limitado. Con coseguro. Internación compartida.",
+      "tag": "Económico"
+    },
+    "SAJU2100": {
+      "id": "SAJU2100",
+      "name": "El Popular",
+      "coinsurance": false,
+      "pharmacyDiscount": 50,
+      "internationType": "shared_private_discount",
+      "complexStudies": true,
+      "targetCustomer": "employed_family",
+      "hospitalPrivateAccess": "without_coinsurance",
+      "description": "Empleado con familia. Sin coseguro. Estudios complejos incluidos.",
+      "tag": "Más Vendido"
+    },
+    "SAJU3100": {
+      "id": "SAJU3100",
+      "name": "El Premium",
+      "coinsurance": false,
+      "pharmacyDiscount": 60,
+      "internationType": "private",
+      "complexStudies": true,
+      "targetCustomer": "40plus_budget",
+      "hospitalPrivateAccess": "minor_coinsurance",
+      "description": "40+ con presupuesto. Internación privada. Sin coseguro excepto Hospital Privado.",
+      "tag": "Premium"
+    },
+    "SAJU4100": {
+      "id": "SAJU4100",
+      "name": "El Total",
+      "coinsurance": false,
+      "pharmacyDiscount": 60,
+      "internationType": "private",
+      "complexStudies": true,
+      "targetCustomer": "high_income",
+      "hospitalPrivateAccess": "without_coinsurance",
+      "description": "Máxima cobertura. Cero coseguro en todas las clínicas. Internación privada.",
+      "tag": "Total"
+    }
+  },
+
+  "ageRanges": {
+    "0-17": "0-17",
+    "18-35": "18-35",
+    "36-45": "36-45",
+    "46-50": "46-50",
+    "51-55": "51-55"
+  },
+
+  "pricingTables": {
+    "dependency": {
+      "0-17":  { "SAJU1100": 22000, "SAJU2100": 28000, "SAJU3100": 38000, "SAJU4100": 50000 },
+      "18-35": { "SAJU1100": 38000, "SAJU2100": 48000, "SAJU3100": 65000, "SAJU4100": 85000 },
+      "36-45": { "SAJU1100": 58000, "SAJU2100": 72000, "SAJU3100": 98000, "SAJU4100": 130000 },
+      "46-50": { "SAJU1100": 72000, "SAJU2100": 90000, "SAJU3100": 122000, "SAJU4100": 160000 },
+      "51-55": { "SAJU1100": 88000, "SAJU2100": 110000, "SAJU3100": 150000, "SAJU4100": 195000 }
+    },
+    "monotributo": {
+      "A": {
+        "0-17":  { "SAJU1100": 18000, "SAJU2100": 22000, "SAJU3100": 30000, "SAJU4100": 40000 },
+        "18-35": { "SAJU1100": 28000, "SAJU2100": 33000, "SAJU3100": 45000, "SAJU4100": 60000 },
+        "36-45": { "SAJU1100": 42000, "SAJU2100": 52000, "SAJU3100": 70000, "SAJU4100": 93000 },
+        "46-50": { "SAJU1100": 52000, "SAJU2100": 65000, "SAJU3100": 88000, "SAJU4100": 115000 },
+        "51-55": { "SAJU1100": 64000, "SAJU2100": 80000, "SAJU3100": 108000, "SAJU4100": 140000 }
+      },
+      "B": {
+        "0-17":  { "SAJU1100": 18000, "SAJU2100": 22000, "SAJU3100": 30000, "SAJU4100": 40000 },
+        "18-35": { "SAJU1100": 28000, "SAJU2100": 33000, "SAJU3100": 45000, "SAJU4100": 60000 },
+        "36-45": { "SAJU1100": 42000, "SAJU2100": 52000, "SAJU3100": 70000, "SAJU4100": 93000 },
+        "46-50": { "SAJU1100": 52000, "SAJU2100": 65000, "SAJU3100": 88000, "SAJU4100": 115000 },
+        "51-55": { "SAJU1100": 64000, "SAJU2100": 80000, "SAJU3100": 108000, "SAJU4100": 140000 }
+      },
+      "C": {
+        "0-17":  { "SAJU1100": 18000, "SAJU2100": 22000, "SAJU3100": 30000, "SAJU4100": 40000 },
+        "18-35": { "SAJU1100": 29000, "SAJU2100": 35000, "SAJU3100": 47000, "SAJU4100": 63000 },
+        "36-45": { "SAJU1100": 43000, "SAJU2100": 54000, "SAJU3100": 73000, "SAJU4100": 96000 },
+        "46-50": { "SAJU1100": 54000, "SAJU2100": 67000, "SAJU3100": 91000, "SAJU4100": 119000 },
+        "51-55": { "SAJU1100": 66000, "SAJU2100": 82000, "SAJU3100": 111000, "SAJU4100": 145000 }
+      },
+      "D": {
+        "0-17":  { "SAJU1100": 18000, "SAJU2100": 22000, "SAJU3100": 30000, "SAJU4100": 40000 },
+        "18-35": { "SAJU1100": 30000, "SAJU2100": 37000, "SAJU3100": 50000, "SAJU4100": 66000 },
+        "36-45": { "SAJU1100": 45000, "SAJU2100": 56000, "SAJU3100": 76000, "SAJU4100": 100000 },
+        "46-50": { "SAJU1100": 56000, "SAJU2100": 70000, "SAJU3100": 95000, "SAJU4100": 124000 },
+        "51-55": { "SAJU1100": 68000, "SAJU2100": 85000, "SAJU3100": 115000, "SAJU4100": 150000 }
+      },
+      "E": {
+        "0-17":  { "SAJU1100": 18000, "SAJU2100": 22000, "SAJU3100": 30000, "SAJU4100": 40000 },
+        "18-35": { "SAJU1100": 31000, "SAJU2100": 39000, "SAJU3100": 53000, "SAJU4100": 70000 },
+        "36-45": { "SAJU1100": 46000, "SAJU2100": 58000, "SAJU3100": 79000, "SAJU4100": 103000 },
+        "46-50": { "SAJU1100": 58000, "SAJU2100": 72000, "SAJU3100": 98000, "SAJU4100": 128000 },
+        "51-55": { "SAJU1100": 70000, "SAJU2100": 88000, "SAJU3100": 119000, "SAJU4100": 155000 }
+      },
+      "F": {
+        "0-17":  { "SAJU1100": 18000, "SAJU2100": 22000, "SAJU3100": 30000, "SAJU4100": 40000 },
+        "18-35": { "SAJU1100": 32000, "SAJU2100": 40000, "SAJU3100": 54000, "SAJU4100": 72000 },
+        "36-45": { "SAJU1100": 47000, "SAJU2100": 59000, "SAJU3100": 80000, "SAJU4100": 105000 },
+        "46-50": { "SAJU1100": 59000, "SAJU2100": 74000, "SAJU3100": 100000, "SAJU4100": 131000 },
+        "51-55": { "SAJU1100": 72000, "SAJU2100": 90000, "SAJU3100": 122000, "SAJU4100": 159000 }
+      },
+      "G": {
+        "0-17":  { "SAJU1100": 18000, "SAJU2100": 22000, "SAJU3100": 30000, "SAJU4100": 40000 },
+        "18-35": { "SAJU1100": 33000, "SAJU2100": 41000, "SAJU3100": 56000, "SAJU4100": 74000 },
+        "36-45": { "SAJU1100": 48000, "SAJU2100": 60000, "SAJU3100": 82000, "SAJU4100": 107000 },
+        "46-50": { "SAJU1100": 60000, "SAJU2100": 75000, "SAJU3100": 102000, "SAJU4100": 133000 },
+        "51-55": { "SAJU1100": 73000, "SAJU2100": 92000, "SAJU3100": 124000, "SAJU4100": 162000 }
+      },
+      "H": {
+        "0-17":  { "SAJU1100": 18000, "SAJU2100": 22000, "SAJU3100": 30000, "SAJU4100": 40000 },
+        "18-35": { "SAJU1100": 34000, "SAJU2100": 43000, "SAJU3100": 58000, "SAJU4100": 76000 },
+        "36-45": { "SAJU1100": 50000, "SAJU2100": 62000, "SAJU3100": 84000, "SAJU4100": 110000 },
+        "46-50": { "SAJU1100": 62000, "SAJU2100": 77000, "SAJU3100": 105000, "SAJU4100": 137000 },
+        "51-55": { "SAJU1100": 75000, "SAJU2100": 94000, "SAJU3100": 127000, "SAJU4100": 166000 }
+      },
+      "I": {
+        "0-17":  { "SAJU1100": 18000, "SAJU2100": 22000, "SAJU3100": 30000, "SAJU4100": 40000 },
+        "18-35": { "SAJU1100": 35000, "SAJU2100": 44000, "SAJU3100": 59000, "SAJU4100": 78000 },
+        "36-45": { "SAJU1100": 51000, "SAJU2100": 64000, "SAJU3100": 86000, "SAJU4100": 113000 },
+        "46-50": { "SAJU1100": 64000, "SAJU2100": 80000, "SAJU3100": 108000, "SAJU4100": 141000 },
+        "51-55": { "SAJU1100": 78000, "SAJU2100": 97000, "SAJU3100": 131000, "SAJU4100": 171000 }
+      },
+      "J": {
+        "0-17":  { "SAJU1100": 18000, "SAJU2100": 22000, "SAJU3100": 30000, "SAJU4100": 40000 },
+        "18-35": { "SAJU1100": 36000, "SAJU2100": 45000, "SAJU3100": 61000, "SAJU4100": 80000 },
+        "36-45": { "SAJU1100": 53000, "SAJU2100": 66000, "SAJU3100": 89000, "SAJU4100": 116000 },
+        "46-50": { "SAJU1100": 66000, "SAJU2100": 82000, "SAJU3100": 111000, "SAJU4100": 145000 },
+        "51-55": { "SAJU1100": 80000, "SAJU2100": 100000, "SAJU3100": 135000, "SAJU4100": 176000 }
+      },
+      "K": {
+        "0-17":  { "SAJU1100": 18000, "SAJU2100": 22000, "SAJU3100": 30000, "SAJU4100": 40000 },
+        "18-35": { "SAJU1100": 37000, "SAJU2100": 46000, "SAJU3100": 62000, "SAJU4100": 82000 },
+        "36-45": { "SAJU1100": 54000, "SAJU2100": 68000, "SAJU3100": 92000, "SAJU4100": 120000 },
+        "46-50": { "SAJU1100": 68000, "SAJU2100": 85000, "SAJU3100": 115000, "SAJU4100": 150000 },
+        "51-55": { "SAJU1100": 82000, "SAJU2100": 103000, "SAJU3100": 139000, "SAJU4100": 182000 }
+      }
+    },
+    "prepaid": {
+      "0-17":  { "SAJU1100": 28000, "SAJU2100": 35000, "SAJU3100": 48000, "SAJU4100": 63000 },
+      "18-35": { "SAJU1100": 52000, "SAJU2100": 65000, "SAJU3100": 88000, "SAJU4100": 115000 },
+      "36-45": { "SAJU1100": 80000, "SAJU2100": 100000, "SAJU3100": 136000, "SAJU4100": 178000 },
+      "46-50": { "SAJU1100": 100000, "SAJU2100": 125000, "SAJU3100": 170000, "SAJU4100": 221000 },
+      "51-55": { "SAJU1100": 122000, "SAJU2100": 153000, "SAJU3100": 207000, "SAJU4100": 270000 }
+    }
+  },
+
+  "pricingRules": {
+    "dependency": {
+      "formula": "sueldo_bruto × 0.03 × 3",
+      "description": "Calcula capacidad de pago estimada",
+      "outputType": "estimated_capacity",
+      "validationRule": "capacity >= plan_price"
+    },
+    "monotributo": {
+      "inputs": ["categoria", "edad", "plan"],
+      "description": "Busca directo en tabla de precios",
+      "outputType": "direct_price",
+      "validationRule": "always_valid"
+    },
+    "prepaid": {
+      "inputs": ["edad", "plan"],
+      "description": "Busca directo en tabla de precios",
+      "outputType": "direct_price",
+      "validationRule": "always_valid"
+    }
+  },
+
+  "familyCalculation": {
+    "mode": "per_person",
+    "totalFormula": "sum(titular + spouse + children)",
+    "allowedMembers": ["spouse", "concubine", "children"],
+    "childMaxAge": 21,
+    "studentException": true,
+    "studentMaxAge": 25
+  },
+
+  "requiredDocuments": {
+    "dependency": [
+      {
+        "id": "DNI",
+        "name": "DNI",
+        "required": true,
+        "type": "original_copy",
+        "howToObtain": "Renovar en comisaría si está vencido",
+        "purpose": "Identificación del titular"
+      },
+      {
+        "id": "CLAVE_FISCAL",
+        "name": "Clave Fiscal",
+        "required": true,
+        "type": "digital",
+        "howToObtain": "www.afip.gob.ar → Solicitar Clave Fiscal (10 min)",
+        "purpose": "Verificación con AFIP"
+      },
+      {
+        "id": "RECIBO_SUELDO",
+        "name": "Recibo de Sueldo",
+        "required": false,
+        "type": "copy",
+        "howToObtain": "Lo proporciona el empleador",
+        "purpose": "Si no tiene Clave Fiscal, prueba relación laboral"
+      }
+    ],
+    "monotributo": [
+      {
+        "id": "DNI",
+        "name": "DNI",
+        "required": true,
+        "type": "copy",
+        "howToObtain": "Renovar en comisaría si está vencido",
+        "purpose": "Identificación del titular"
+      },
+      {
+        "id": "CODEM_ANSES",
+        "name": "CODEM ANSES",
+        "required": true,
+        "type": "digital",
+        "howToObtain": "www.anses.gob.ar → Login con Clave Fiscal → Descargar CODEM (5 min)",
+        "purpose": "Comprueba registro como monotributista"
+      },
+      {
+        "id": "FORMULARIO_184",
+        "name": "Formulario 184",
+        "required": true,
+        "type": "digital",
+        "howToObtain": "www.afip.gob.ar → Login con Clave Fiscal → Mis Datos de Contribuyente",
+        "purpose": "Detalle de actividad tributaria"
+      },
+      {
+        "id": "CREDENCIAL_F152",
+        "name": "Credencial de Pago F.152",
+        "required": true,
+        "type": "digital",
+        "howToObtain": "www.afip.gob.ar → Login con Clave Fiscal → Mis Datos de Contribuyente",
+        "purpose": "Comprueba últimos 3 pagos al día (CRÍTICO)",
+        "critical": true
+      },
+      {
+        "id": "CLAVE_FISCAL",
+        "name": "Clave Fiscal",
+        "required": true,
+        "type": "digital",
+        "howToObtain": "www.afip.gob.ar → Solicitar Clave Fiscal (10 min)",
+        "purpose": "Acceso portal AFIP"
+      }
+    ],
+    "prepaid": [
+      {
+        "id": "DNI",
+        "name": "DNI",
+        "required": true,
+        "type": "original_copy",
+        "howToObtain": "Renovar en comisaría si está vencido",
+        "purpose": "Identificación del titular"
+      },
+      {
+        "id": "CLAVE_FISCAL",
+        "name": "Clave Fiscal",
+        "required": true,
+        "type": "digital",
+        "howToObtain": "www.afip.gob.ar → Solicitar Clave Fiscal (10 min)",
+        "purpose": "Verificación AFIP (auditoría más exhaustiva)"
+      }
+    ],
+    "family_members": {
+      "spouse": [
+        {
+          "id": "DNI_CONYUGE",
+          "name": "DNI del Cónyuge",
+          "required": true,
+          "type": "copy",
+          "howToObtain": "Copia del DNI del cónyuge",
+          "purpose": "Identificación del cónyuge"
+        },
+        {
+          "id": "ACTA_MATRIMONIO",
+          "name": "Acta de Matrimonio",
+          "required": true,
+          "type": "certified_copy",
+          "howToObtain": "Registro Civil donde se realizó el matrimonio",
+          "purpose": "Prueba del vínculo matrimonial"
+        }
+      ],
+      "concubine": [
+        {
+          "id": "DNI_CONCUBINO",
+          "name": "DNI del Concubino/a",
+          "required": true,
+          "type": "copy",
+          "howToObtain": "Copia del DNI del concubino/a",
+          "purpose": "Identificación del concubino/a"
+        },
+        {
+          "id": "CONVIVENCIA",
+          "name": "Constancia de Convivencia",
+          "required": true,
+          "type": "certified",
+          "howToObtain": "Registro Civil o Juzgado de Paz, con 2 testigos",
+          "purpose": "Prueba de convivencia"
+        }
+      ],
+      "child": [
+        {
+          "id": "DNI_HIJO",
+          "name": "DNI del Hijo/a",
+          "required": true,
+          "type": "copy",
+          "howToObtain": "DNI del menor. Si es recién nacido: Libreta de Nacimiento",
+          "purpose": "Identificación del hijo/a"
+        },
+        {
+          "id": "ACTA_NACIMIENTO",
+          "name": "Acta de Nacimiento",
+          "required": true,
+          "type": "certified_copy",
+          "howToObtain": "Registro Civil del nacimiento",
+          "purpose": "Prueba del vínculo filial"
+        }
+      ],
+      "student_child": [
+        {
+          "id": "DNI_HIJO",
+          "name": "DNI del Hijo/a",
+          "required": true,
+          "type": "copy",
+          "howToObtain": "DNI del menor",
+          "purpose": "Identificación del hijo/a"
+        },
+        {
+          "id": "ACTA_NACIMIENTO",
+          "name": "Acta de Nacimiento",
+          "required": true,
+          "type": "certified_copy",
+          "howToObtain": "Registro Civil del nacimiento",
+          "purpose": "Prueba del vínculo filial"
+        },
+        {
+          "id": "CERT_ESCOLAR",
+          "name": "Certificado de Estudiante",
+          "required": true,
+          "type": "original",
+          "howToObtain": "Secretaría de la facultad o institución educativa (renovar anualmente)",
+          "purpose": "Acredita condición de estudiante para extender cobertura hasta 25 años",
+          "critical": true
+        }
+      ]
+    }
+  },
+
+  "faq": [
+    {
+      "id": "faq_monotributo_docs",
+      "question": "¿Qué documentación necesito para un monotributista?",
+      "answer": "DNI + CODEM ANSES + Formulario 184 + Credencial de Pago F.152 (debe mostrar últimos 3 meses pagados) + Clave Fiscal. La Credencial F.152 es CRÍTICA: si los 3 últimos meses no están pagados, no puede ingresar."
+    },
+    {
+      "id": "faq_clave_fiscal",
+      "question": "¿Cómo obtiene el cliente la Clave Fiscal?",
+      "answer": "En www.afip.gob.ar → 'Solicitar Clave Fiscal'. Se necesita DNI y datos personales. El proceso toma aproximadamente 10 minutos. Se puede hacer en persona en cualquier agencia AFIP o por internet si ya tiene nivel 2."
+    },
+    {
+      "id": "faq_plan_2100_vs_3100",
+      "question": "¿Cuál es la diferencia entre el Plan 2100 y el 3100?",
+      "answer": "Plan 2100 (El Popular): Sin coseguro, 50% farmacia, internación compartida con descuento en privadas, estudios complejos incluidos. Plan 3100 (El Premium): Sin coseguro (excepto Hospital Privado), 60% farmacia, internación PRIVADA, estudios complejos. El 3100 da acceso a habitación privada."
+    },
+    {
+      "id": "faq_coseguro",
+      "question": "¿Qué es el coseguro?",
+      "answer": "Es un porcentaje del costo de la prestación que paga el paciente. Por ejemplo, si una consulta cuesta $5.000 y hay un coseguro del 20%, el paciente paga $1.000 y SAJU cubre $4.000. El Plan 1100 tiene coseguro; los planes 2100, 3100 y 4100 no tienen coseguro en consultas."
+    },
+    {
+      "id": "faq_add_spouse",
+      "question": "¿Cómo se agrega un cónyuge?",
+      "answer": "El cónyuge se agrega como familiar y se calcula individualmente según su edad y el mismo plan. Documentación requerida: DNI del cónyuge + Acta de Matrimonio (copia certificada del Registro Civil). Cada miembro tiene su propio precio según su edad."
+    },
+    {
+      "id": "faq_child_docs",
+      "question": "¿Qué documentación piden para un hijo?",
+      "answer": "Hijos menores de 21 años: DNI del hijo + Acta de Nacimiento. Hijos entre 21 y 25 años en condición de estudiantes: DNI + Acta de Nacimiento + Certificado de Alumno Regular (se renueva anualmente en la secretaría de la institución educativa)."
+    },
+    {
+      "id": "faq_student_exception",
+      "question": "¿Qué cambia si el hijo es estudiante y tiene más de 21 años?",
+      "answer": "El límite normal para hijos es 21 años. Si el hijo tiene entre 21 y 25 años y está cursando estudios de nivel terciario o universitario, puede mantenerse como beneficiario adicional. Debe presentar anualmente un Certificado de Alumno Regular emitido por su institución educativa."
+    },
+    {
+      "id": "faq_dependencia_capacity",
+      "question": "¿Cómo se calcula la capacidad de pago en relación de dependencia?",
+      "answer": "La fórmula es: Sueldo Bruto × 0.03 × 3. Por ejemplo, sueldo de $200.000 → $200.000 × 0.03 = $6.000 × 3 = $18.000 de capacidad estimada. Este valor se compara con el precio del plan para el rango de edad del titular."
+    },
+    {
+      "id": "faq_prepaid",
+      "question": "¿Quién puede ingresar como Prepago Puro?",
+      "answer": "Personas sin relación laboral: jubilados, amas de casa, estudiantes, rentistas. La auditoría médica es más exhaustiva y el precio es mayor (aproximadamente 50-80% más que la base). No hay subsidio estatal. El precio varía fuertemente con la edad."
+    }
+  ],
+
+  "nextSteps": [
+    {
+      "step": 1,
+      "title": "Reunir documentación",
+      "description": "El cliente debe reunir toda la documentación detallada en el checklist antes de continuar."
+    },
+    {
+      "step": 2,
+      "title": "Auditoría médica",
+      "description": "SAJU realiza una auditoría médica básica. En casos de Prepago, la auditoría es más exhaustiva."
+    },
+    {
+      "step": 3,
+      "title": "Completar formulario de adhesión",
+      "description": "El vendedor completa el formulario de adhesión con todos los datos del grupo familiar."
+    },
+    {
+      "step": 4,
+      "title": "Firma y primer pago",
+      "description": "El cliente firma la solicitud y realiza el primer pago. La cobertura inicia a partir del primer día del mes siguiente."
+    },
+    {
+      "step": 5,
+      "title": "Entrega de credenciales",
+      "description": "SAJU emite las credenciales para el titular y cada integrante del grupo familiar."
+    }
+  ]
+}

@@ -1,0 +1,256 @@
+Quiero que construyas una app web autoguiada para vendedores de cobertura médica.
+
+Voy a proporcionarte una base de datos estructurada (JSON) con:
+
+* planes
+* reglas de cálculo
+* documentación requerida
+* flujos de decisión
+* preguntas frecuentes
+
+Tu tarea es convertir esto en una app funcional, pensada para que un vendedor pueda usarla en tiempo real frente al cliente.
+
+---
+
+## OBJETIVO DE LA APP
+
+Que el vendedor pueda cargar los datos del cliente y la app le indique:
+
+* qué plan le corresponde o cuál conviene sugerir
+* cuánto paga el titular
+* cuánto paga cada integrante del grupo familiar
+* cuál es el costo total
+* qué documentación corresponde pedir en cada caso
+* qué documentación falta
+* cómo obtiene el cliente cada documento
+* cuáles son los siguientes pasos del proceso
+
+La app no debe ser solo una calculadora.
+Debe ser también una guía operativa y comercial.
+
+---
+
+## FUNCIONALIDAD PRINCIPAL
+
+### 1. Flujo guiado paso a paso
+
+La app debe tener un flujo simple, claro y usable.
+
+Pantallas sugeridas:
+
+1. Tipo de cliente
+
+   * Relación de dependencia
+   * Monotributo
+   * Prepago (solo si aplica en los datos)
+
+2. Edad del titular
+
+3. Datos económicos
+
+   * Relación de dependencia → sueldo bruto
+   * Monotributo → categoría
+
+4. Plan
+
+   * sugerido automáticamente según reglas
+   * o seleccionable manualmente si el vendedor quiere comparar
+
+5. Grupo familiar
+
+   * agregar integrantes
+   * tipo (cónyuge / concubino / hijo)
+   * edad
+
+6. Documentación
+
+   * mostrar en este paso la documentación requerida según el caso
+   * permitir marcar qué documentación ya está disponible
+   * indicar cuál falta
+
+7. Resultado final
+
+   * plan sugerido
+   * costos
+   * documentación total requerida
+   * próximos pasos
+
+---
+
+## FUNCIONALIDAD CLAVE: DOCUMENTACIÓN POR CASO
+
+La app debe mostrar la documentación de forma dinámica según lo que el vendedor vaya cargando.
+
+Ejemplo:
+
+* si elige relación de dependencia → mostrar documentación del titular de relación de dependencia
+* si elige monotributo → mostrar documentación del monotributista
+* si agrega cónyuge → sumar documentación de cónyuge
+* si agrega hijo → sumar documentación de hijo según edad
+* si agrega varios integrantes → consolidar toda la documentación necesaria
+
+---
+
+## COMPORTAMIENTO ESPERADO EN DOCUMENTACIÓN
+
+La app debe permitir:
+
+### A. Ver la documentación requerida por caso
+
+Por ejemplo:
+
+* titular relación de dependencia
+* titular monotributista
+* esposa
+* concubina
+* hijo menor de 1 año
+* hijo de 1 a 21 años
+* hijo mayor de 21 estudiante
+
+### B. Mostrar para cada documento:
+
+* nombre del documento
+* para qué sirve
+* cómo se obtiene
+* si aplica o no al caso actual
+
+### C. Checklist interactivo
+
+Cada documento debe poder marcarse como:
+
+* pendiente
+* ya presentado
+* falta conseguir
+
+### D. Resumen final de documentación
+
+En el resultado final debe mostrarse:
+
+* documentación completa requerida
+* documentación ya disponible
+* documentación faltante
+
+---
+
+## CÁLCULO AUTOMÁTICO
+
+Implementar estas reglas:
+
+### Relación de dependencia
+
+* tomar sueldo bruto
+* calcular sueldo * 0.03
+* multiplicar ese resultado por 3
+* comparar el valor resultante con la tabla correspondiente por edad
+* determinar qué plan encaja mejor
+
+### Monotributo
+
+* usar categoría + edad + plan
+* buscar el adicional correspondiente en la tabla
+
+### Grupo familiar
+
+* cada integrante se calcula individualmente según edad y plan
+* costo total = suma del titular + todos los integrantes
+
+Si los datos no alcanzan para definir exactamente una regla, usar la estructura JSON y dejar la lógica desacoplada para poder editarla después.
+
+---
+
+## RESULTADO FINAL
+
+La app debe mostrar una pantalla de resumen con:
+
+* tipo de cliente
+* edad del titular
+* sueldo bruto o categoría
+* plan sugerido
+* costo del titular
+* costo por cada integrante
+* costo total del grupo
+* documentación requerida total
+* documentación ya presentada
+* documentación faltante
+* explicación de próximos pasos
+
+---
+
+## MODO CONSULTA RÁPIDA
+
+Agregar una sección con respuestas rápidas a preguntas frecuentes, por ejemplo:
+
+* qué necesito para monotributo
+* cómo obtener clave fiscal
+* qué diferencia hay entre plan 2100 y 3100
+* qué es coseguro
+* cómo agregar cónyuge
+* qué documentación piden para un hijo
+* qué cambia si el hijo es estudiante y mayor de 21
+
+---
+
+## DISEÑO
+
+* interfaz clara, profesional y muy simple
+* mobile first
+* navegación paso a paso
+* botones grandes
+* tarjetas visuales
+* resumen visible del caso
+* checklist de documentación muy claro
+* usar colores o etiquetas para diferenciar:
+
+  * completo
+  * pendiente
+  * faltante
+
+---
+
+## TECNOLOGÍA
+
+* React
+* componentes reutilizables
+* lógica separada de la UI
+* datos cargados desde JSON
+* estructura fácil de mantener y editar
+
+---
+
+## REQUISITOS TÉCNICOS IMPORTANTES
+
+* no hardcodear datos de planes o documentos dentro de los componentes
+
+* leer todo desde el JSON
+
+* separar:
+
+  * reglas de negocio
+  * datos
+  * presentación
+
+* crear una estructura fácil de ampliar en el futuro
+
+---
+
+## EXPERIENCIA DE USO ESPERADA
+
+La app tiene que servirle a un vendedor que está hablando con un cliente en vivo.
+
+Por eso debe permitirle:
+
+* entender rápido el caso
+* calcular rápido
+* saber qué plan ofrecer
+* saber qué pedir
+* no olvidarse documentación
+* cerrar la conversación con claridad
+
+---
+
+## IMPORTANTE
+
+No quiero una app tipo manual estático.
+Quiero una herramienta guiada, operativa y comercial.
+
+Ahora te voy a pasar el JSON con la información base. Construí la app sobre esa estructura.

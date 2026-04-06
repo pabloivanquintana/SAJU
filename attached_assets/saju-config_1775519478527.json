@@ -1,0 +1,302 @@
+{
+  "appName": "SAJU Sales Calculator",
+  "version": "1.0",
+  
+  "clientTypes": {
+    "dependency": {
+      "name": "Relación de Dependencia",
+      "description": "Trabajador formal",
+      "minAntiquity": 12,
+      "calculationMethod": "salary_based",
+      "priceMultiplier": 1.0
+    },
+    "monotributo": {
+      "name": "Monotributista",
+      "description": "Trabajador independiente",
+      "categories": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K"],
+      "minPaymentMonths": 3,
+      "calculationMethod": "category_based",
+      "priceMultiplier": 1.35
+    },
+    "prepaid": {
+      "name": "Prepago Puro",
+      "description": "Sin relación laboral",
+      "calculationMethod": "age_based",
+      "priceMultiplier": 1.65
+    }
+  },
+
+  "plans": {
+    "SAJU1100": {
+      "id": "SAJU1100",
+      "name": "El Básico",
+      "coinsurance": true,
+      "pharmacyDiscount": 40,
+      "internationType": "shared",
+      "complexStudies": false,
+      "targetCustomer": "young_healthy",
+      "hospitalPrivateAccess": "with_coinsurance"
+    },
+    "SAJU2100": {
+      "id": "SAJU2100",
+      "name": "El Popular",
+      "coinsurance": false,
+      "pharmacyDiscount": 50,
+      "internationType": "shared_private_discount",
+      "complexStudies": true,
+      "targetCustomer": "employed_family",
+      "hospitalPrivateAccess": "without_coinsurance"
+    },
+    "SAJU3100": {
+      "id": "SAJU3100",
+      "name": "El Premium",
+      "coinsurance": false,
+      "pharmacyDiscount": 60,
+      "internationType": "private",
+      "complexStudies": true,
+      "targetCustomer": "40plus_budget",
+      "hospitalPrivateAccess": "minor_coinsurance"
+    },
+    "SAJU4100": {
+      "id": "SAJU4100",
+      "name": "El Total",
+      "coinsurance": false,
+      "pharmacyDiscount": 60,
+      "internationType": "private",
+      "complexStudies": true,
+      "targetCustomer": "high_income",
+      "hospitalPrivateAccess": "without_coinsurance"
+    }
+  },
+
+  "ageRanges": {
+    "0-17": "0-17",
+    "18-35": "18-35",
+    "36-45": "36-45",
+    "46-50": "46-50",
+    "51-55": "51-55"
+  },
+
+  "pricingRules": {
+    "dependency": {
+      "formula": "sueldo_bruto × 0.03 × 3",
+      "description": "Calcula capacidad de pago estimada",
+      "outputType": "estimated_capacity",
+      "validationRule": "capacity >= plan_price"
+    },
+    "monotributo": {
+      "inputs": ["categoria", "edad", "plan"],
+      "description": "Busca directo en tabla de precios",
+      "outputType": "direct_price",
+      "validationRule": "always_valid"
+    },
+    "prepaid": {
+      "inputs": ["edad", "plan"],
+      "description": "Busca directo en tabla de precios",
+      "outputType": "direct_price",
+      "validationRule": "always_valid"
+    }
+  },
+
+  "familyCalculation": {
+    "mode": "per_person",
+    "totalFormula": "sum(titular + spouse + children)",
+    "allowedMembers": ["spouse", "concubine", "children"],
+    "childMaxAge": 21,
+    "studentException": true,
+    "studentMaxAge": 25
+  },
+
+  "requiredDocuments": {
+    "dependency": [
+      {
+        "id": "DNI",
+        "name": "DNI",
+        "required": true,
+        "type": "original_copy",
+        "howToObtain": "Renovar en comisaría si está vencido",
+        "purpose": "Identificación"
+      },
+      {
+        "id": "CLAVE_FISCAL",
+        "name": "Clave Fiscal",
+        "required": true,
+        "type": "digital",
+        "howToObtain": "www.afip.gob.ar - Solicitar Clave Fiscal (10 min)",
+        "purpose": "Verificación con AFIP"
+      },
+      {
+        "id": "RECIBO_SUELDO",
+        "name": "Recibo de Sueldo",
+        "required": false,
+        "type": "copy",
+        "howToObtain": "Lo proporciona empleador",
+        "purpose": "Si no tiene Clave Fiscal, prueba relación laboral"
+      }
+    ],
+    "monotributo": [
+      {
+        "id": "DNI",
+        "name": "DNI",
+        "required": true,
+        "type": "copy",
+        "howToObtain": "Renovar en comisaría si está vencido",
+        "purpose": "Identificación"
+      },
+      {
+        "id": "CODEM_ANSES",
+        "name": "CODEM ANSES",
+        "required": true,
+        "type": "digital",
+        "howToObtain": "www.anses.gob.ar - Login con Clave Fiscal - descargar CODEM (5 min)",
+        "purpose": "Comprueba registro como monotributista"
+      },
+      {
+        "id": "FORMULARIO_184",
+        "name": "Formulario 184",
+        "required": true,
+        "type": "digital",
+        "howToObtain": "www.afip.gob.ar - Login con Clave Fiscal - Mis Datos de Contribuyente",
+        "purpose": "Detalle de actividad tributaria"
+      },
+      {
+        "id": "CREDENCIAL_F152",
+        "name": "Credencial de Pago F.152",
+        "required": true,
+        "type": "digital",
+        "howToObtain": "www.afip.gob.ar - Login con Clave Fiscal - Mis Datos de Contribuyente",
+        "purpose": "Comprueba últimos 3 pagos al día (CRÍTICO)",
+        "validationRule": "last_3_months_paid"
+      },
+      {
+        "id": "CLAVE_FISCAL",
+        "name": "Clave Fiscal",
+        "required": true,
+        "type": "digital",
+        "howToObtain": "www.afip.gob.ar - Solicitar Clave Fiscal (10 min)",
+        "purpose": "Acceso portal AFIP"
+      }
+    ]
+  },
+
+  "guidedFlowSteps": [
+    {
+      "step": 1,
+      "question": "¿Qué tipo de cliente?",
+      "inputType": "single_select",
+      "options": ["dependency", "monotributo", "prepaid"]
+    },
+    {
+      "step": 2,
+      "question": "¿Edad del titular?",
+      "inputType": "number",
+      "validation": "min=0, max=120"
+    },
+    {
+      "step": 3,
+      "question": "Datos económicos",
+      "inputType": "conditional",
+      "dependsOn": "client_type",
+      "if_dependency": "¿Sueldo bruto mensual?",
+      "if_monotributo": "¿Categoría AFIP?",
+      "if_prepaid": "Pasar a siguiente"
+    },
+    {
+      "step": 4,
+      "question": "¿Qué plan prefiere?",
+      "inputType": "single_select_suggested",
+      "showRecommendation": true
+    },
+    {
+      "step": 5,
+      "question": "¿Agregar familiares?",
+      "inputType": "multi_add",
+      "allowAdd": true,
+      "allowRemove": true
+    },
+    {
+      "step": 6,
+      "question": "Resumen y documentación",
+      "inputType": "display_summary",
+      "showDocumentsChecklist": true,
+      "showNextSteps": true
+    }
+  ],
+
+  "exampleCases": [
+    {
+      "id": "case_1",
+      "name": "Relación de Dependencia Solo",
+      "client": "Juan",
+      "age": 40,
+      "clientType": "dependency",
+      "salary": 150000,
+      "estimatedCapacity": 13500,
+      "plan": "SAJU1100",
+      "monthlyPrice": 58000,
+      "family": [],
+      "totalMonthly": 58000,
+      "note": "Cliente joven con presupuesto limitado"
+    },
+    {
+      "id": "case_2",
+      "name": "Relación de Dependencia + Cónyuge",
+      "client": "Juan + Mariana",
+      "ages": [40, 38],
+      "clientType": "dependency",
+      "salaries": [150000, 120000],
+      "plan": "SAJU1100",
+      "prices": [58000, 53750],
+      "family": [
+        {"name": "Mariana", "age": 38, "type": "spouse", "plan": "SAJU1100", "price": 53750}
+      ],
+      "totalMonthly": 111750,
+      "note": "Pareja empleada con plan básico"
+    },
+    {
+      "id": "case_3",
+      "name": "Relación Dependencia + Familia Completa",
+      "client": "Carlos + Graciela + Lucía + Mateo",
+      "ages": [45, 42, 5, 9],
+      "clientType": "dependency",
+      "plan": "SAJU2100",
+      "prices": [92500, 87000, 35000, 35000],
+      "family": [
+        {"name": "Graciela", "age": 42, "type": "spouse", "plan": "SAJU2100", "price": 87000},
+        {"name": "Lucía", "age": 5, "type": "child", "plan": "SAJU2100", "price": 35000},
+        {"name": "Mateo", "age": 9, "type": "child", "plan": "SAJU2100", "price": 35000}
+      ],
+      "totalMonthly": 249500,
+      "note": "Familia 4 miembros, Plan 2100 sin coseguro"
+    },
+    {
+      "id": "case_4",
+      "name": "Monotributista Solo",
+      "client": "Roberto",
+      "age": 38,
+      "clientType": "monotributo",
+      "category": "D",
+      "plan": "SAJU2100",
+      "monthlyPrice": 33000,
+      "family": [],
+      "totalMonthly": 33000,
+      "note": "Monotributista accede con documentación específica"
+    },
+    {
+      "id": "case_5",
+      "name": "Monotributista + Familia",
+      "client": "Roberto + Claudia + Juliana",
+      "ages": [38, 35, 7],
+      "clientType": "monotributo",
+      "category": "D",
+      "plan": "SAJU2100",
+      "prices": [33000, 30000, 18000],
+      "family": [
+        {"name": "Claudia", "age": 35, "type": "spouse", "price": 30000},
+        {"name": "Juliana", "age": 7, "type": "child", "price": 18000}
+      ],
+      "totalMonthly": 81000,
+      "note": "Monotributista con cónyuge e hijo"
+    }
+  ]
+}

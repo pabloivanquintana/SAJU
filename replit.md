@@ -16,6 +16,25 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **API codegen**: Orval (from OpenAPI spec)
 - **Build**: esbuild (CJS bundle)
 
+## Artifacts
+
+### SAJU Sales Calculator (`artifacts/saju-calculator`)
+- **Type**: React + Vite (frontend only, no backend needed)
+- **Preview path**: `/`
+- **Port**: 19996
+- **Purpose**: Guided step-by-step web app for healthcare coverage sales reps. Lets vendors calculate prices, suggest plans, and manage documentation checklists in real time with clients.
+- **Architecture**:
+  - All data driven from `src/data/saju-config.json` (plans, pricing tables, documents, FAQ)
+  - Business logic in `src/lib/calculator.ts` (price lookup, plan suggestion, capacity calculation)
+  - State managed via React Context in `src/context/CalculatorContext.tsx`
+  - 7-step guided flow: ClientType → Age → EconomicData → Plan → Family → Documentation → Summary
+  - Quick FAQ tab for common seller questions
+
+### API Server (`artifacts/api-server`)
+- **Type**: Express 5 API
+- **Preview path**: `/api`
+- **Port**: 8080
+
 ## Key Commands
 
 - `pnpm run typecheck` — full typecheck across all packages
