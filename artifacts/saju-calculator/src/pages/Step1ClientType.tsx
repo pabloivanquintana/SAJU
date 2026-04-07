@@ -21,7 +21,7 @@ const clientOptions: { type: ClientType; icon: React.ElementType; title: string;
     type: "prepaid",
     icon: User,
     title: "Prepago Puro",
-    description: "Sin relación laboral. Jubilado, estudiante, ama de casa. Precio base +50-80%.",
+    description: "Sin relación laboral. Jubilado, estudiante, ama de casa.",
   },
 ];
 

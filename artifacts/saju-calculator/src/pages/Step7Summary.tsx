@@ -5,7 +5,8 @@ import {
   getFamilyMemberLabel,
   getRequiredDocuments,
   calculateCapacity,
-  getDependencyThreshold,
+  getDependencyPlanPrice,
+  getDependencyDifference,
 } from "@/lib/calculator";
 import type { DocumentStatus, MemberPriceResult, PlanId, RequiredDoc } from "@/lib/calculator";
 import { CheckCircle2, AlertCircle, Clock, RotateCcw, ChevronDown, ChevronUp, AlertTriangle, CheckCircle } from "lucide-react";
@@ -44,18 +45,19 @@ export function Step7Summary() {
     state.holderAge,
     planId,
     state.familyMembers,
-    state.monotributoCategory
+    state.monotributoCategory,
+    state.salary
   );
 
-  // For dependency: check plan accessibility via threshold
-  const holderThreshold = isDependency
-    ? getDependencyThreshold(planId, state.holderAge)
+  // For dependency: plan price + diferencia que paga el empleado
+  const dependencyPlanPrice = isDependency
+    ? getDependencyPlanPrice(planId, state.holderAge)
     : null;
   const capacity = isDependency && state.salary != null
     ? calculateCapacity(state.salary)
     : null;
-  const planAccessible = capacity != null && holderThreshold != null
-    ? capacity >= holderThreshold
+  const dependencyDifference = isDependency && state.salary != null
+    ? getDependencyDifference(state.salary, planId, state.holderAge)
     : null;
 
   const allDocs = getRequiredDocuments(state.clientType, state.familyMembers);
@@ -114,8 +116,8 @@ export function Step7Summary() {
         <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
           <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Desglose de costos</p>
           {isDependency && (
-            <span className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-0.5">
-              Titular accede por aporte
+            <span className="text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded px-2 py-0.5">
+              Relación de Dependencia
             </span>
           )}
           {isMonotributo && (
@@ -130,9 +132,9 @@ export function Step7Summary() {
             {isDependency ? (
               <DependencyHolderRow
                 holderAge={state.holderAge}
-                threshold={holderThreshold}
+                planPrice={dependencyPlanPrice}
                 capacity={capacity}
-                accessible={planAccessible}
+                diferencia={dependencyDifference}
               />
             ) : (
               <PersonCostRow
@@ -182,30 +184,29 @@ export function Step7Summary() {
             </div>
           )}
 
-          {/* Dependency: total with members (when table is populated) or explanatory note */}
+          {/* Dependency: total mensual */}
           {isDependency && total != null && (
             <div className="mt-4 bg-blue-600 rounded-xl px-4 py-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-semibold text-blue-200 uppercase tracking-wider">Total familiares</p>
-                  <p className="text-xs text-blue-200 mt-0.5">Costo adicional mensual</p>
+                  <p className="text-xs font-semibold text-blue-200 uppercase tracking-wider">Total mensual</p>
+                  <p className="text-xs text-blue-200 mt-0.5">
+                    {state.familyMembers.length > 0
+                      ? `Titular + ${state.familyMembers.length} familiar${state.familyMembers.length > 1 ? "es" : ""}`
+                      : "Solo titular"}
+                  </p>
                 </div>
                 <span className="text-3xl font-bold text-white">{formatCurrency(total)}</span>
               </div>
             </div>
           )}
           {isDependency && total == null && (
-            <div className="mt-4 rounded-xl overflow-hidden border border-amber-200">
-              <div className="bg-amber-50 px-4 py-3 space-y-1.5">
-                <p className="text-xs font-semibold text-amber-800">Resumen Relación de Dependencia</p>
-                <p className="text-xs text-amber-700">
-                  <strong>Titular:</strong> accede al plan por capacidad de aporte — sin costo adicional propio.
+            <div className="mt-4 rounded-xl overflow-hidden border border-blue-200">
+              <div className="bg-blue-50 px-4 py-3 space-y-1.5">
+                <p className="text-xs font-semibold text-blue-800">Relación de Dependencia</p>
+                <p className="text-xs text-blue-700">
+                  Ingresá el sueldo bruto para calcular la diferencia que paga el empleado.
                 </p>
-                {state.familyMembers.length > 0 && (
-                  <p className="text-xs text-amber-700">
-                    <strong>Familiares:</strong> generan costo adicional individual. La tabla de costos está pendiente de configuración en el sistema.
-                  </p>
-                )}
               </div>
             </div>
           )}
@@ -296,42 +297,45 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-/** Row for dependency holder — shows threshold + accessibility, NOT price */
+/** Row for dependency holder — shows plan price, employer discount, and diferencia */
 function DependencyHolderRow({
   holderAge,
-  threshold,
+  planPrice,
   capacity,
-  accessible,
+  diferencia,
 }: {
   holderAge: number;
-  threshold: number | null;
+  planPrice: number | null;
   capacity: number | null;
-  accessible: boolean | null;
+  diferencia: number | null;
 }) {
   return (
     <div className="flex items-start justify-between gap-2 py-2 border-b border-gray-100">
       <div className="min-w-0">
         <p className="text-sm font-semibold text-gray-800">Titular</p>
         <p className="text-xs text-gray-500">{holderAge} años · Relación de Dependencia</p>
-        {threshold != null && (
-          <p className="text-xs text-gray-400 mt-0.5">Ingreso mín.: {formatCurrency(threshold)}</p>
+        {planPrice != null && (
+          <p className="text-xs text-gray-400 mt-0.5">Precio plan: {formatCurrency(planPrice)}</p>
+        )}
+        {capacity != null && (
+          <p className="text-xs text-gray-400">Descuento empleador: {formatCurrency(capacity)}</p>
         )}
       </div>
       <div className="text-right flex-shrink-0">
-        {accessible === true && (
+        {diferencia === null && (
+          <span className="text-xs text-gray-400 italic">Sin sueldo ingresado</span>
+        )}
+        {diferencia === 0 && (
           <div className="flex items-center gap-1 text-emerald-600 justify-end">
             <CheckCircle className="w-4 h-4" />
-            <span className="text-sm font-semibold">Accede al plan</span>
+            <span className="text-sm font-semibold">Cubierto</span>
           </div>
         )}
-        {accessible === false && (
-          <div className="flex items-center gap-1 text-red-500 justify-end">
-            <AlertTriangle className="w-4 h-4" />
-            <span className="text-sm font-semibold">No accede</span>
+        {diferencia != null && diferencia > 0 && (
+          <div>
+            <p className="text-xs text-amber-600">Diferencia a pagar</p>
+            <p className="text-sm font-bold text-amber-700">{formatCurrency(diferencia)}</p>
           </div>
-        )}
-        {accessible === null && (
-          <span className="text-xs text-gray-400 italic">Subsidiado</span>
         )}
       </div>
     </div>

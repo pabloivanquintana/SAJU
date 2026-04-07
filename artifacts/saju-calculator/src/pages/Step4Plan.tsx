@@ -2,14 +2,15 @@ import { useMemo, useEffect } from "react";
 import { useCalculator } from "@/context/CalculatorContext";
 import {
   getHolderPrice,
-  getDependencyThreshold,
+  getDependencyPlanPrice,
+  getDependencyDifference,
   calculateCapacity,
   getMonotributoAdicional,
   suggestPlan,
   formatCurrency,
 } from "@/lib/calculator";
 import type { PlanId } from "@/lib/calculator";
-import { Check, ChevronRight, Stethoscope, Pill, Hospital, Microscope, AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
+import { Check, ChevronRight, Stethoscope, Pill, Hospital, Microscope, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import config from "@/data/saju-config.json";
 
@@ -81,13 +82,13 @@ export function Step4Plan() {
 
         {isDependency && capacity != null && (
           <div className="mt-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-xs text-blue-700">
-            Capacidad de pago: <strong>{formatCurrency(capacity)}/mes</strong>.
-            {" "}Los planes accesibles se marcan en verde.
+            Descuento empleador: <strong>{formatCurrency(capacity)}/mes</strong>.
+            {" "}La diferencia es lo que abona el empleado.
           </div>
         )}
         {isDependency && capacity == null && (
           <div className="mt-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-500">
-            Los planes muestran el <strong>ingreso mínimo requerido</strong> (no es el precio que paga el cliente).
+            Ingresá el sueldo bruto para ver la diferencia que paga el empleado.
           </div>
         )}
         {isMonotributo && (
@@ -116,12 +117,12 @@ export function Step4Plan() {
           const isSelected = state.selectedPlan === planId;
           const isSuggested = planId === suggested;
 
-          // ── Dependency: threshold-based, NOT a price ──────────────────────
-          const threshold = isDependency && state.holderAge != null
-            ? getDependencyThreshold(planId, state.holderAge)
+          // ── Dependency: plan price + diferencia que paga el empleado ─────
+          const planPrice = isDependency && state.holderAge != null
+            ? getDependencyPlanPrice(planId, state.holderAge)
             : null;
-          const isAccessible = isDependency && capacity != null && threshold != null
-            ? capacity >= threshold
+          const diferencia = isDependency && state.salary != null && state.holderAge != null
+            ? getDependencyDifference(state.salary, planId, state.holderAge)
             : null;
 
           // ── Monotributo: titular pays ADICIONAL only ─────────────────────
@@ -169,28 +170,29 @@ export function Step4Plan() {
               </div>
 
               <div className="flex flex-col items-end justify-between flex-shrink-0 gap-2 min-w-[90px]">
-                {/* Dependency: show threshold + accessibility badge */}
-                {isDependency && threshold != null && (
-                  <div className="text-right">
-                    <p className="text-xs text-gray-400 mb-0.5">Ingreso mín. requerido</p>
+                {/* Dependency: show plan price + diferencia */}
+                {isDependency && planPrice != null && (
+                  <div className="text-right space-y-0.5">
+                    <p className="text-xs text-gray-400">Precio plan</p>
                     <p className={cn("text-sm font-bold", isSelected ? "text-blue-800" : "text-gray-700")}>
-                      {formatCurrency(threshold)}
+                      {formatCurrency(planPrice)}
                     </p>
-                    {isAccessible === true && (
-                      <div className="mt-1 flex items-center gap-1 justify-end text-emerald-600">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        <span className="text-xs font-semibold">Accede</span>
-                      </div>
-                    )}
-                    {isAccessible === false && (
-                      <div className="mt-1 flex items-center gap-1 justify-end text-red-400">
-                        <XCircle className="w-3.5 h-3.5" />
-                        <span className="text-xs font-semibold">No accede</span>
-                      </div>
+                    {diferencia !== null && (
+                      diferencia === 0 ? (
+                        <div className="mt-1 flex items-center gap-1 justify-end text-emerald-600">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span className="text-xs font-semibold">Cubierto</span>
+                        </div>
+                      ) : (
+                        <div className="mt-1 text-right">
+                          <p className="text-xs text-amber-600">Diferencia</p>
+                          <p className="text-sm font-bold text-amber-700">{formatCurrency(diferencia)}</p>
+                        </div>
+                      )
                     )}
                   </div>
                 )}
-                {isDependency && threshold == null && (
+                {isDependency && planPrice == null && (
                   <span className="text-xs text-gray-400">—</span>
                 )}
 

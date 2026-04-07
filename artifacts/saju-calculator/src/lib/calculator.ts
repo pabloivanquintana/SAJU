@@ -44,24 +44,28 @@ export function getCategoryGroup(category: string): string {
 // ─── DEPENDENCY ────────────────────────────────────────────────────────────────
 
 /**
- * The relacion_dependencia table represents the MINIMUM INCOME THRESHOLD
- * needed to access a plan — NOT a price.
- *
- * If capacity (salary × 3% × 3) >= threshold  → plan is accessible.
- * If capacity < threshold                       → plan is NOT accessible.
+ * Returns the price of a plan under relación de dependencia.
+ * The employer/AFIP contributes capacity = salary × 3% × 3.
+ * If capacity >= planPrice → employee pays $0 (fully covered).
+ * If capacity < planPrice  → employee pays the difference.
  */
-export function getDependencyThreshold(planId: PlanId, age: number): number | null {
+export function getDependencyPlanPrice(planId: PlanId, age: number): number | null {
   const ageRange = getAgeRange(age);
   if (!ageRange) return null;
   const pricing = config.pricing as Record<string, Record<string, Record<string, number>>>;
   return pricing.relacion_dependencia?.[planId]?.[ageRange] ?? null;
 }
 
-export function canAccessPlan(salary: number, planId: PlanId, age: number): boolean {
-  const capacity = calculateCapacity(salary);
-  const threshold = getDependencyThreshold(planId, age);
-  if (threshold == null) return false;
-  return capacity >= threshold;
+/**
+ * Returns how much the employee pays out of pocket for this plan.
+ * diferencia = max(0, planPrice - capacity)
+ * Returns 0 if the employer contribution covers the full plan price.
+ */
+export function getDependencyDifference(salary: number, planId: PlanId, age: number): number {
+  const planPrice = getDependencyPlanPrice(planId, age);
+  if (planPrice == null) return 0;
+  const cap = calculateCapacity(salary);
+  return Math.max(0, planPrice - cap);
 }
 
 // ─── MONOTRIBUTO ───────────────────────────────────────────────────────────────
@@ -142,7 +146,7 @@ export function getPrepaidPrice(planId: PlanId, age: number): number | null {
 /**
  * Price the TITULAR pays for this plan.
  *
- * - dependency  → null  (plan access is threshold-based; employer covers cost)
+ * - dependency  → diferencia = max(0, planPrice - capacity). 0 means fully covered.
  * - monotributo → adicional only  (NOT pricing.monotributo — that value is not the charge)
  * - prepaid     → pricing.prepago[plan][ageRange]
  */
@@ -150,9 +154,13 @@ export function getHolderPrice(
   clientType: ClientType,
   age: number,
   planId: PlanId,
-  category?: string | null
+  category?: string | null,
+  salary?: number | null
 ): number | null {
-  if (clientType === "dependency") return null;
+  if (clientType === "dependency") {
+    if (salary == null) return null;
+    return getDependencyDifference(salary, planId, age);
+  }
   if (clientType === "prepaid") return getPrepaidPrice(planId, age);
   if (clientType === "monotributo") {
     if (!category) return null;
@@ -237,7 +245,7 @@ export interface MemberPriceResult {
 }
 
 export interface TotalResult {
-  holderPrice: number | null;     // what the titular pays
+  holderPrice: number | null;     // diferencia que paga el titular (0 = cubierto por empleador)
   memberPrices: MemberPriceResult[];
   total: number | null;
 }
@@ -246,9 +254,9 @@ export interface TotalResult {
  * Calculates the full cost breakdown for a case.
  *
  * dependency:
- *   - holderPrice = null (threshold-based, no monetary charge for titular)
+ *   - holderPrice = max(0, planPrice - capacity)  → diferencia que paga el empleado
  *   - memberPrices = getDependencyMemberPrice per member (null until table is populated)
- *   - total = sum of non-null member prices (null if no member has a price)
+ *   - total = holderPrice + sum of non-null member prices
  *
  * monotributo:
  *   - holderPrice = adicional_titular
@@ -264,9 +272,10 @@ export function calculateTotal(
   holderAge: number,
   planId: PlanId,
   familyMembers: FamilyMember[],
-  category?: string | null
+  category?: string | null,
+  salary?: number | null
 ): TotalResult {
-  const holderPrice = getHolderPrice(clientType, holderAge, planId, category);
+  const holderPrice = getHolderPrice(clientType, holderAge, planId, category, salary);
 
   const memberPrices: MemberPriceResult[] = familyMembers.map((member) => {
     if (clientType === "monotributo" && category) {
@@ -284,14 +293,17 @@ export function calculateTotal(
   let total: number | null;
 
   if (clientType === "dependency") {
-    // Titular has no monetary cost. Total = sum of member costs only.
-    // If no member has a defined price yet, total stays null.
+    // holderPrice is the diferencia (can be 0 if fully covered, null if no salary)
     const nonNullMemberPrices = memberPrices
       .map((m) => m.price)
       .filter((p): p is number => p !== null);
-    total = nonNullMemberPrices.length > 0
-      ? nonNullMemberPrices.reduce((sum, p) => sum + p, 0)
-      : null;
+    if (holderPrice != null) {
+      total = holderPrice + nonNullMemberPrices.reduce((sum, p) => sum + p, 0);
+    } else if (nonNullMemberPrices.length > 0) {
+      total = nonNullMemberPrices.reduce((sum, p) => sum + p, 0);
+    } else {
+      total = null;
+    }
   } else {
     // monotributo / prepaid: total requires ALL prices to be non-null
     const allPrices = [holderPrice, ...memberPrices.map((m) => m.price)];
