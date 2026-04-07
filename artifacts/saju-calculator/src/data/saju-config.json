@@ -179,6 +179,14 @@
     }
   },
 
+  "dependency_family_pricing": {
+    "_note": "TODO: Definir el costo adicional mensual por familiar en Relación de Dependencia. Mismo shape que pricing.relacion_dependencia pero representa costo real (no umbral). Una vez cargados los valores, descomentar el lookup en getDependencyMemberPrice() en calculator.ts.",
+    "SAJU1100": {},
+    "SAJU2100": {},
+    "SAJU3100": {},
+    "SAJU4100": {}
+  },
+
   "pricingRules": {
     "dependency": {
       "formula": "sueldo_bruto × 0.03 × 3",

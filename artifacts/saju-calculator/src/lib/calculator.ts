@@ -33,64 +33,66 @@ export function calculateCapacity(salary: number): number {
 }
 
 /**
- * Maps an individual monotributo category letter to its group key used in
- * monotributo_adicionales (e.g. "A" → "A,B,C", "D" → "D").
+ * Maps an individual category letter to its group key in monotributo_adicionales.
+ * A/B/C → "A,B,C"  |  D → "D"  |  etc.
  */
 export function getCategoryGroup(category: string): string {
   if (["A", "B", "C"].includes(category.toUpperCase())) return "A,B,C";
   return category.toUpperCase();
 }
 
+// ─── DEPENDENCY ────────────────────────────────────────────────────────────────
+
 /**
- * Get the final price for a given client type, age, and plan.
+ * The relacion_dependencia table represents the MINIMUM INCOME THRESHOLD
+ * needed to access a plan — NOT a price.
  *
- * - dependency  → pricing.relacion_dependencia[plan][ageRange]
- * - monotributo → pricing.monotributo[plan][ageRange]  (PRECIO FINAL)
- * - prepaid     → pricing.prepago[plan][ageRange]
- *
- * For monotributo the returned value is the PRECIO FINAL (total cuota).
- * To get the adicional use getMonotributoAdicional().
+ * If capacity (salary × 3% × 3) >= threshold  → plan is accessible.
+ * If capacity < threshold                       → plan is NOT accessible.
  */
-export function getPrice(
-  clientType: ClientType,
-  age: number,
-  planId: PlanId,
-): number | null {
+export function getDependencyThreshold(planId: PlanId, age: number): number | null {
   const ageRange = getAgeRange(age);
   if (!ageRange) return null;
-
   const pricing = config.pricing as Record<string, Record<string, Record<string, number>>>;
+  return pricing.relacion_dependencia?.[planId]?.[ageRange] ?? null;
+}
 
-  if (clientType === "dependency") {
-    return pricing.relacion_dependencia?.[planId]?.[ageRange] ?? null;
-  }
+export function canAccessPlan(salary: number, planId: PlanId, age: number): boolean {
+  const capacity = calculateCapacity(salary);
+  const threshold = getDependencyThreshold(planId, age);
+  if (threshold == null) return false;
+  return capacity >= threshold;
+}
 
-  if (clientType === "monotributo") {
-    return pricing.monotributo?.[planId]?.[ageRange] ?? null;
-  }
+// ─── MONOTRIBUTO ───────────────────────────────────────────────────────────────
 
-  if (clientType === "prepaid") {
-    return pricing.prepago?.[planId]?.[ageRange] ?? null;
-  }
-
-  return null;
+/**
+ * Returns the APORTE_MT for a given category group.
+ * This is what the titular already pays to AFIP — it is NOT an extra charge for the titular.
+ * It IS charged for each additional family member.
+ */
+export function getAporteMT(category: string): number | null {
+  const adicionales = config.monotributo_adicionales as Record<string, Record<string, number>>;
+  const group = getCategoryGroup(category);
+  const val = adicionales?.aporte_mt?.[group];
+  return val != null ? val : null;
 }
 
 /**
- * Get the adicional a pagar for monotributo.
+ * Returns the ADICIONAL a pagar for a given plan / category / age.
  * Source: monotributo_adicionales[plan][categoryGroup][ageRange]
- * Returns null if not applicable (e.g. plan has no additional for that category/age).
+ *
+ * - Titular pays: ONLY this adicional
+ * - Family member pays: aporte_mt + this adicional
  */
 export function getMonotributoAdicional(
   age: number,
   planId: PlanId,
-  category: string,
+  category: string
 ): number | null {
   const ageRange = getAgeRange(age);
   if (!ageRange) return null;
-
-  // SAJU500 has no adicionales table entry — return null
-  if (planId === "SAJU500") return null;
+  if (planId === "SAJU500") return null; // SAJU500 is prepaid-only
 
   const adicionales = config.monotributo_adicionales as Record<string, Record<string, Record<string, number>>>;
   const group = getCategoryGroup(category);
@@ -98,74 +100,208 @@ export function getMonotributoAdicional(
   return val != null ? val : null;
 }
 
+// ─── DEPENDENCY FAMILY MEMBER ─────────────────────────────────────────────────
+
+/**
+ * Returns the additional cost a FAMILY MEMBER pays under relación de dependencia.
+ *
+ * The holder accesses the plan via capacity threshold (no monetary charge for them),
+ * but each additional dependent DOES generate a cost.
+ *
+ * TODO: Populate "dependency_family_pricing" in saju-config.json with the actual
+ * per-member cost table (same shape as pricing.relacion_dependencia but representing
+ * a real cost, not a threshold). Then uncomment the lookup below.
+ *
+ * Format expected in JSON:
+ *   "dependency_family_pricing": {
+ *     "SAJU1100": { "0-17": XXXX, "18-35": XXXX, ... },
+ *     ...
+ *   }
+ */
+export function getDependencyMemberPrice(planId: PlanId, age: number): number | null {
+  const ageRange = getAgeRange(age);
+  if (!ageRange) return null;
+  // TODO: uncomment once dependency_family_pricing is defined in saju-config.json
+  // const pricing = (config as Record<string, unknown>).dependency_family_pricing as
+  //   Record<string, Record<string, number>> | undefined;
+  // return pricing?.[planId]?.[ageRange] ?? null;
+  return null; // pending data definition
+}
+
+// ─── PREPAID ──────────────────────────────────────────────────────────────────
+
+export function getPrepaidPrice(planId: PlanId, age: number): number | null {
+  const ageRange = getAgeRange(age);
+  if (!ageRange) return null;
+  const pricing = config.pricing as Record<string, Record<string, Record<string, number>>>;
+  return pricing.prepago?.[planId]?.[ageRange] ?? null;
+}
+
+// ─── UNIFIED PRICE HELPERS ────────────────────────────────────────────────────
+
+/**
+ * Price the TITULAR pays for this plan.
+ *
+ * - dependency  → null  (plan access is threshold-based; employer covers cost)
+ * - monotributo → adicional only  (NOT pricing.monotributo — that value is not the charge)
+ * - prepaid     → pricing.prepago[plan][ageRange]
+ */
+export function getHolderPrice(
+  clientType: ClientType,
+  age: number,
+  planId: PlanId,
+  category?: string | null
+): number | null {
+  if (clientType === "dependency") return null;
+  if (clientType === "prepaid") return getPrepaidPrice(planId, age);
+  if (clientType === "monotributo") {
+    if (!category) return null;
+    return getMonotributoAdicional(age, planId, category);
+  }
+  return null;
+}
+
+/**
+ * Price a FAMILY MEMBER pays for this plan.
+ *
+ * - dependency  → getDependencyMemberPrice (TODO: table pending)
+ * - monotributo → aporte_mt + adicional  (member pays both)
+ * - prepaid     → pricing.prepago[plan][ageRange]
+ */
+export function getMemberPrice(
+  clientType: ClientType,
+  age: number,
+  planId: PlanId,
+  category?: string | null
+): number | null {
+  if (clientType === "dependency") return getDependencyMemberPrice(planId, age);
+  if (clientType === "prepaid") return getPrepaidPrice(planId, age);
+  if (clientType === "monotributo") {
+    if (!category) return null;
+    const aporteMT = getAporteMT(category);
+    const adicional = getMonotributoAdicional(age, planId, category);
+    if (aporteMT == null || adicional == null) return null;
+    return aporteMT + adicional;
+  }
+  return null;
+}
+
+// ─── SUGGEST PLAN ─────────────────────────────────────────────────────────────
+
 export function suggestPlan(
   clientType: ClientType,
   holderAge: number,
-  salary?: number | null,
+  salary?: number | null
 ): PlanId {
-  const planIds: PlanId[] = ["SAJU500", "SAJU1100", "SAJU2100", "SAJU3100", "SAJU4100"];
+  const nonPrepaidPlans: PlanId[] = ["SAJU1100", "SAJU2100", "SAJU3100", "SAJU4100"];
+  const prepaidPlans: PlanId[] = ["SAJU500", "SAJU1100", "SAJU2100", "SAJU3100", "SAJU4100"];
+
+  if (clientType === "prepaid") {
+    // Suggest by age for prepaid
+    if (holderAge <= 35) return "SAJU1100";
+    if (holderAge <= 45) return "SAJU2100";
+    if (holderAge <= 50) return "SAJU3100";
+    return "SAJU3100";
+  }
 
   if (clientType === "dependency" && salary != null) {
     const capacity = calculateCapacity(salary);
     const ageRange = getAgeRange(holderAge);
     if (ageRange) {
       const pricing = config.pricing as Record<string, Record<string, Record<string, number>>>;
-      // Suggest the best plan whose price fits within capacity
-      for (const planId of planIds) {
-        const price = pricing.relacion_dependencia?.[planId]?.[ageRange];
-        if (price != null && capacity >= price) {
+      // Find the best plan whose THRESHOLD the client's capacity can meet
+      for (const planId of [...nonPrepaidPlans].reverse()) {
+        const threshold = pricing.relacion_dependencia?.[planId]?.[ageRange];
+        if (threshold != null && capacity >= threshold) {
           return planId;
         }
       }
     }
-    return "SAJU500";
+    return "SAJU1100";
   }
 
+  // Monotributo / dependency without salary: suggest by age
   if (holderAge <= 35) return "SAJU1100";
   if (holderAge <= 45) return "SAJU2100";
   if (holderAge <= 50) return "SAJU3100";
   return "SAJU3100";
 }
 
+// ─── TOTAL CALCULATION ────────────────────────────────────────────────────────
+
 export interface MemberPriceResult {
   member: FamilyMember;
-  price: number | null;
-  adicional: number | null;
+  price: number | null;       // total the member pays
+  aporteMTPart: number | null; // for monotributo: the aporte_mt component
+  adicionalPart: number | null; // for monotributo: the adicional component
 }
 
+export interface TotalResult {
+  holderPrice: number | null;     // what the titular pays
+  memberPrices: MemberPriceResult[];
+  total: number | null;
+}
+
+/**
+ * Calculates the full cost breakdown for a case.
+ *
+ * dependency:
+ *   - holderPrice = null (threshold-based, no monetary charge for titular)
+ *   - memberPrices = getDependencyMemberPrice per member (null until table is populated)
+ *   - total = sum of non-null member prices (null if no member has a price)
+ *
+ * monotributo:
+ *   - holderPrice = adicional_titular
+ *   - each memberPrice = aporte_mt + adicional_member
+ *   - total = holderPrice + SUM(memberPrices)
+ *
+ * prepaid:
+ *   - all prices from pricing.prepago[plan][ageRange]
+ *   - total = sum of all
+ */
 export function calculateTotal(
   clientType: ClientType,
   holderAge: number,
   planId: PlanId,
   familyMembers: FamilyMember[],
   category?: string | null
-): {
-  holderPrice: number | null;
-  holderAdicional: number | null;
-  memberPrices: MemberPriceResult[];
-  total: number | null;
-} {
-  const holderPrice = getPrice(clientType, holderAge, planId);
-  const holderAdicional = clientType === "monotributo" && category
-    ? getMonotributoAdicional(holderAge, planId, category)
-    : null;
+): TotalResult {
+  const holderPrice = getHolderPrice(clientType, holderAge, planId, category);
 
   const memberPrices: MemberPriceResult[] = familyMembers.map((member) => {
-    const price = getPrice(clientType, member.age, planId);
-    const adicional = clientType === "monotributo" && category
-      ? getMonotributoAdicional(member.age, planId, category)
-      : null;
-    return { member, price, adicional };
+    if (clientType === "monotributo" && category) {
+      const aporteMTPart = getAporteMT(category);
+      const adicionalPart = getMonotributoAdicional(member.age, planId, category);
+      const price = aporteMTPart != null && adicionalPart != null
+        ? aporteMTPart + adicionalPart
+        : null;
+      return { member, price, aporteMTPart, adicionalPart };
+    }
+    const price = getMemberPrice(clientType, member.age, planId, category);
+    return { member, price, aporteMTPart: null, adicionalPart: null };
   });
 
-  const allPrices = [holderPrice, ...memberPrices.map((m) => m.price)];
-  const hasNull = allPrices.some((p) => p === null);
+  let total: number | null;
 
-  const total = hasNull
-    ? null
-    : allPrices.reduce<number>((sum, p) => sum + (p as number), 0);
+  if (clientType === "dependency") {
+    // Titular has no monetary cost. Total = sum of member costs only.
+    // If no member has a defined price yet, total stays null.
+    const nonNullMemberPrices = memberPrices
+      .map((m) => m.price)
+      .filter((p): p is number => p !== null);
+    total = nonNullMemberPrices.length > 0
+      ? nonNullMemberPrices.reduce((sum, p) => sum + p, 0)
+      : null;
+  } else {
+    // monotributo / prepaid: total requires ALL prices to be non-null
+    const allPrices = [holderPrice, ...memberPrices.map((m) => m.price)];
+    const hasNull = allPrices.some((p) => p === null);
+    total = hasNull
+      ? null
+      : allPrices.reduce<number>((sum, p) => sum + (p as number), 0);
+  }
 
-  return { holderPrice, holderAdicional, memberPrices, total };
+  return { holderPrice, memberPrices, total };
 }
 
 export function isStudentEligible(age: number, isStudent: boolean): boolean {
@@ -196,24 +332,14 @@ type RawDoc = {
   condition?: string;
 };
 
-/**
- * Rules:
- * 1. Load base docs per client type (requiredDocuments[clientType])
- * 2. Filter conditional docs: RECIBO_SUELDO only if CLAVE_FISCAL is NOT in the titular docs
- * 3. If any family member: add familyCommonDocuments (deduplicated by id)
- * 4. Per family member: add specific docs from requiredDocuments.family_members (deduplicated)
- * 5. Add warning doc if child age is ambiguous (21-25, not marked student)
- */
 export function getRequiredDocuments(
   clientType: ClientType,
   familyMembers: FamilyMember[]
 ): RequiredDoc[] {
   const docsConfig = config.requiredDocuments as Record<string, unknown>;
-
   const rawHolderDocs = docsConfig[clientType] as RawDoc[];
   const hasClavesFiscal = rawHolderDocs.some((d) => d.id === "CLAVE_FISCAL");
 
-  // Step 1+2: titular docs with conditional filtering
   const holderDocs: RequiredDoc[] = rawHolderDocs
     .filter((d) => {
       if (d.condition === "no_clave_fiscal") return !hasClavesFiscal;
@@ -225,7 +351,6 @@ export function getRequiredDocuments(
   const result: RequiredDoc[] = [...holderDocs];
 
   if (familyMembers.length > 0) {
-    // Step 3: common family docs (add once, deduplicated)
     const commonDocs = config.familyCommonDocuments as RawDoc[];
     for (const doc of commonDocs) {
       if (!seenBaseIds.has(doc.id)) {
@@ -234,19 +359,15 @@ export function getRequiredDocuments(
       }
     }
 
-    // Step 4+5: per-member docs
     const familyDocsSource = docsConfig.family_members as Record<string, RawDoc[]>;
-
     familyMembers.forEach((member) => {
       let memberDocKey: string = member.type;
       if (member.type === "child" && member.age > 21 && member.isStudent) {
         memberDocKey = "student_child";
       }
-
       const memberName = member.name || memberLabel(member.type);
       const memberDocs = familyDocsSource[memberDocKey] ?? familyDocsSource[member.type] ?? [];
       const seenMemberDocIds = new Set<string>();
-
       memberDocs.forEach((d) => {
         if (!seenMemberDocIds.has(d.id)) {
           seenMemberDocIds.add(d.id);
@@ -258,8 +379,6 @@ export function getRequiredDocuments(
           });
         }
       });
-
-      // Warning for age-ambiguous child
       if (member.type === "child" && member.age > 21 && member.age <= 25 && !member.isStudent) {
         result.push({
           id: `WARNING_ESTUDIANTE_${member.id}`,
@@ -292,7 +411,7 @@ export function formatCurrency(amount: number): string {
     style: "currency",
     currency: "ARS",
     minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    maximumFractionDigits: 2,
   }).format(amount);
 }
 

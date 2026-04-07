@@ -1,7 +1,14 @@
 import { useCalculator } from "@/context/CalculatorContext";
-import { calculateTotal, formatCurrency, getFamilyMemberLabel, getRequiredDocuments } from "@/lib/calculator";
+import {
+  calculateTotal,
+  formatCurrency,
+  getFamilyMemberLabel,
+  getRequiredDocuments,
+  calculateCapacity,
+  getDependencyThreshold,
+} from "@/lib/calculator";
 import type { DocumentStatus, MemberPriceResult, PlanId, RequiredDoc } from "@/lib/calculator";
-import { CheckCircle2, AlertCircle, Clock, RotateCcw, ChevronDown, ChevronUp, AlertTriangle } from "lucide-react";
+import { CheckCircle2, AlertCircle, Clock, RotateCcw, ChevronDown, ChevronUp, AlertTriangle, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import config from "@/data/saju-config.json";
@@ -29,14 +36,27 @@ export function Step7Summary() {
   const plans = config.plans as Record<string, { id: string; name: string; pharmacyDiscount: number; tag: string }>;
   const plan = plans[planId];
 
-  const { holderPrice, holderAdicional, memberPrices, total } = calculateTotal(
+  const isDependency = state.clientType === "dependency";
+  const isMonotributo = state.clientType === "monotributo";
+
+  const { holderPrice, memberPrices, total } = calculateTotal(
     state.clientType,
     state.holderAge,
     planId,
     state.familyMembers,
     state.monotributoCategory
   );
-  const isMonotributo = state.clientType === "monotributo";
+
+  // For dependency: check plan accessibility via threshold
+  const holderThreshold = isDependency
+    ? getDependencyThreshold(planId, state.holderAge)
+    : null;
+  const capacity = isDependency && state.salary != null
+    ? calculateCapacity(state.salary)
+    : null;
+  const planAccessible = capacity != null && holderThreshold != null
+    ? capacity >= holderThreshold
+    : null;
 
   const allDocs = getRequiredDocuments(state.clientType, state.familyMembers);
   const regularDocs = allDocs.filter((d) => !d.warning);
@@ -76,7 +96,12 @@ export function Step7Summary() {
           <SummaryRow label="Tipo de cliente" value={CLIENT_TYPE_LABELS[state.clientType]} />
           <SummaryRow label="Edad del titular" value={`${state.holderAge} años`} />
           {state.salary != null && (
-            <SummaryRow label="Sueldo bruto" value={formatCurrency(state.salary)} />
+            <>
+              <SummaryRow label="Sueldo bruto" value={formatCurrency(state.salary)} />
+              {capacity != null && (
+                <SummaryRow label="Capacidad de pago" value={`${formatCurrency(capacity)}/mes`} />
+              )}
+            </>
           )}
           {state.monotributoCategory && (
             <SummaryRow label="Categoría AFIP" value={`Categoría ${state.monotributoCategory}`} />
@@ -88,34 +113,55 @@ export function Step7Summary() {
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
           <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Desglose de costos</p>
+          {isDependency && (
+            <span className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-0.5">
+              Titular accede por aporte
+            </span>
+          )}
           {isMonotributo && (
             <span className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded px-2 py-0.5">
-              Precios finales
+              Titular: solo adicional
             </span>
           )}
         </div>
         <div className="p-4">
-          {/* Per-person breakdown */}
           <div className="space-y-3">
-            <PersonCostRow
-              label="Titular"
-              sublabel={`${state.holderAge} años`}
-              price={holderPrice}
-              adicional={isMonotributo ? holderAdicional : null}
-            />
-            {memberPrices.map(({ member, price, adicional }: MemberPriceResult) => (
-              <PersonCostRow
-                key={member.id}
-                label={member.name || getFamilyMemberLabel(member.type)}
-                sublabel={`${member.age} años · ${getFamilyMemberLabel(member.type)}`}
-                price={price}
-                adicional={isMonotributo ? adicional : null}
+            {/* Holder row */}
+            {isDependency ? (
+              <DependencyHolderRow
+                holderAge={state.holderAge}
+                threshold={holderThreshold}
+                capacity={capacity}
+                accessible={planAccessible}
               />
-            ))}
+            ) : (
+              <PersonCostRow
+                label="Titular"
+                sublabel={`${state.holderAge} años`}
+                price={holderPrice}
+                isMonotributoHolder={isMonotributo}
+              />
+            )}
+
+            {/* Member rows */}
+            {memberPrices.map(({ member, price, aporteMTPart, adicionalPart }: MemberPriceResult) =>
+              isDependency ? (
+                <DependencyMemberRow key={member.id} member={member} price={price} />
+              ) : (
+                <PersonCostRow
+                  key={member.id}
+                  label={member.name || getFamilyMemberLabel(member.type)}
+                  sublabel={`${member.age} años · ${getFamilyMemberLabel(member.type)}`}
+                  price={price}
+                  aporteMTPart={aporteMTPart}
+                  adicionalPart={adicionalPart}
+                />
+              )
+            )}
           </div>
 
-          {/* Total */}
-          {total != null && (
+          {/* Total (only for non-dependency) */}
+          {!isDependency && total != null && (
             <div className="mt-4 bg-blue-600 rounded-xl px-4 py-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -130,9 +176,37 @@ export function Step7Summary() {
               </div>
               {isMonotributo && (
                 <p className="text-xs text-blue-200 mt-2 pt-2 border-t border-blue-500">
-                  Total = suma de precios finales por persona
+                  Titular: adicional · Integrantes: aporte AFIP + adicional
                 </p>
               )}
+            </div>
+          )}
+
+          {/* Dependency: total with members (when table is populated) or explanatory note */}
+          {isDependency && total != null && (
+            <div className="mt-4 bg-blue-600 rounded-xl px-4 py-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold text-blue-200 uppercase tracking-wider">Total familiares</p>
+                  <p className="text-xs text-blue-200 mt-0.5">Costo adicional mensual</p>
+                </div>
+                <span className="text-3xl font-bold text-white">{formatCurrency(total)}</span>
+              </div>
+            </div>
+          )}
+          {isDependency && total == null && (
+            <div className="mt-4 rounded-xl overflow-hidden border border-amber-200">
+              <div className="bg-amber-50 px-4 py-3 space-y-1.5">
+                <p className="text-xs font-semibold text-amber-800">Resumen Relación de Dependencia</p>
+                <p className="text-xs text-amber-700">
+                  <strong>Titular:</strong> accede al plan por capacidad de aporte — sin costo adicional propio.
+                </p>
+                {state.familyMembers.length > 0 && (
+                  <p className="text-xs text-amber-700">
+                    <strong>Familiares:</strong> generan costo adicional individual. La tabla de costos está pendiente de configuración en el sistema.
+                  </p>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -222,40 +296,119 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+/** Row for dependency holder — shows threshold + accessibility, NOT price */
+function DependencyHolderRow({
+  holderAge,
+  threshold,
+  capacity,
+  accessible,
+}: {
+  holderAge: number;
+  threshold: number | null;
+  capacity: number | null;
+  accessible: boolean | null;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-2 py-2 border-b border-gray-100">
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-gray-800">Titular</p>
+        <p className="text-xs text-gray-500">{holderAge} años · Relación de Dependencia</p>
+        {threshold != null && (
+          <p className="text-xs text-gray-400 mt-0.5">Ingreso mín.: {formatCurrency(threshold)}</p>
+        )}
+      </div>
+      <div className="text-right flex-shrink-0">
+        {accessible === true && (
+          <div className="flex items-center gap-1 text-emerald-600 justify-end">
+            <CheckCircle className="w-4 h-4" />
+            <span className="text-sm font-semibold">Accede al plan</span>
+          </div>
+        )}
+        {accessible === false && (
+          <div className="flex items-center gap-1 text-red-500 justify-end">
+            <AlertTriangle className="w-4 h-4" />
+            <span className="text-sm font-semibold">No accede</span>
+          </div>
+        )}
+        {accessible === null && (
+          <span className="text-xs text-gray-400 italic">Subsidiado</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Row for dependency family member — shows cost when table is populated, TODO otherwise */
+function DependencyMemberRow({ member, price }: { member: MemberPriceResult["member"]; price: number | null }) {
+  return (
+    <div className="flex items-start justify-between gap-2 py-2 border-b border-gray-100 last:border-0">
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-gray-800">
+          {member.name || getFamilyMemberLabel(member.type)}
+        </p>
+        <p className="text-xs text-gray-500">{member.age} años · {getFamilyMemberLabel(member.type)}</p>
+        <p className="text-xs text-amber-600 mt-0.5">Genera costo adicional</p>
+      </div>
+      <div className="text-right flex-shrink-0">
+        {price != null ? (
+          <span className="text-sm font-bold text-gray-900">{formatCurrency(price)}</span>
+        ) : (
+          <span className="text-xs text-amber-600 italic">Tabla pendiente</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Generic cost row for monotributo and prepaid.
+ *
+ * Monotributo titular:  isMonotributoHolder=true → shows "Pagás $X (adicional)"
+ * Monotributo member:   aporteMTPart + adicionalPart → shows breakdown
+ * Prepaid:              price shown normally
+ */
 function PersonCostRow({
   label,
   sublabel,
   price,
-  adicional,
+  isMonotributoHolder,
+  aporteMTPart,
+  adicionalPart,
 }: {
   label: string;
   sublabel: string;
   price: number | null;
-  adicional?: number | null;
+  isMonotributoHolder?: boolean;
+  aporteMTPart?: number | null;
+  adicionalPart?: number | null;
 }) {
+  const hasMonotributoBreakdown = aporteMTPart != null && adicionalPart != null;
+
   return (
     <div className="flex items-start justify-between gap-2 py-2 border-b border-gray-100 last:border-0">
       <div className="min-w-0">
         <p className="text-sm font-semibold text-gray-800">{label}</p>
         <p className="text-xs text-gray-500">{sublabel}</p>
+        {hasMonotributoBreakdown && (
+          <div className="mt-1 text-xs text-gray-400 space-y-0.5">
+            <span className="block">Aporte AFIP: <strong className="text-gray-600">{formatCurrency(aporteMTPart)}</strong></span>
+            <span className="block">Adicional: <strong className="text-amber-700">{formatCurrency(adicionalPart)}</strong></span>
+          </div>
+        )}
       </div>
       <div className="text-right flex-shrink-0">
-        {adicional != null ? (
-          <p className="text-xs text-gray-400 mb-0.5">Precio final</p>
-        ) : null}
-        <p className="text-sm font-bold text-gray-900">
-          {price != null ? formatCurrency(price) : "—"}
-        </p>
-        {adicional != null && (
+        {price != null ? (
           <>
-            {adicional > 0 ? (
-              <div className="mt-1 bg-amber-50 border border-amber-200 rounded px-2 py-0.5">
-                <p className="text-xs text-amber-600 font-medium">+ {formatCurrency(adicional)} adicional</p>
-              </div>
-            ) : (
-              <p className="text-xs text-emerald-600 mt-0.5">Sin adicional</p>
+            <p className="text-sm font-bold text-gray-900">{formatCurrency(price)}</p>
+            {isMonotributoHolder && (
+              <p className="text-xs text-amber-600 mt-0.5">adicional sobre monotributo</p>
+            )}
+            {hasMonotributoBreakdown && (
+              <p className="text-xs text-gray-400 mt-0.5">aporte + adicional</p>
             )}
           </>
+        ) : (
+          <span className="text-xs text-gray-400">—</span>
         )}
       </div>
     </div>

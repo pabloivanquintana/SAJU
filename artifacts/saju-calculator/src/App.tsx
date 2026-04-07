@@ -135,6 +135,7 @@ function QuickSummaryBanner() {
   if (!state.selectedPlan || !state.holderAge) return null;
 
   const planNames: Record<string, string> = {
+    SAJU500: "El Inicial",
     SAJU1100: "El Básico",
     SAJU2100: "El Popular",
     SAJU3100: "El Premium",

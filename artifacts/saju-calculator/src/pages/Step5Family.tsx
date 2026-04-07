@@ -1,6 +1,15 @@
 import { useState } from "react";
 import { useCalculator } from "@/context/CalculatorContext";
-import { getFamilyMemberLabel, getPrice, formatCurrency, isStudentEligible, calculateTotal } from "@/lib/calculator";
+import {
+  getFamilyMemberLabel,
+  getMemberPrice,
+  getHolderPrice,
+  getAporteMT,
+  getMonotributoAdicional,
+  formatCurrency,
+  isStudentEligible,
+  calculateTotal,
+} from "@/lib/calculator";
 import type { FamilyMemberType, PlanId } from "@/lib/calculator";
 import { Plus, Trash2, Users, ChevronRight, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -42,7 +51,6 @@ export function Step5Family() {
     setShowForm(false);
   }
 
-  // Calculate running total including all current members
   const hasEnoughData = state.clientType && state.holderAge != null && state.selectedPlan;
   const totals = hasEnoughData
     ? calculateTotal(
@@ -54,6 +62,7 @@ export function Step5Family() {
       )
     : null;
 
+  const isDependency = state.clientType === "dependency";
   const isMonotributo = state.clientType === "monotributo";
 
   return (
@@ -72,73 +81,147 @@ export function Step5Family() {
       )}
 
       {state.familyMembers.map((member) => {
-        const price = state.clientType && state.selectedPlan
-          ? getPrice(state.clientType, member.age, state.selectedPlan as PlanId)
+        const plan = state.selectedPlan as PlanId;
+
+        // For monotributo: show aporte_mt + adicional breakdown
+        const memberAporteMT = isMonotributo && state.monotributoCategory
+          ? getAporteMT(state.monotributoCategory)
           : null;
+        const memberAdicional = isMonotributo && plan && state.monotributoCategory
+          ? getMonotributoAdicional(member.age, plan, state.monotributoCategory)
+          : null;
+        const memberTotal = isMonotributo && memberAporteMT != null && memberAdicional != null
+          ? memberAporteMT + memberAdicional
+          : null;
+
+        const memberPrice = !isMonotributo && state.clientType && plan
+          ? getMemberPrice(state.clientType, member.age, plan, state.monotributoCategory)
+          : memberTotal;
+
         const typeInfo = MEMBER_TYPES.find((m) => m.type === member.type);
         return (
-          <div key={member.id} className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-semibold text-sm text-gray-800">{member.name}</span>
-                <span className={cn("text-xs font-medium px-2 py-0.5 rounded-full", typeInfo?.color)}>
-                  {getFamilyMemberLabel(member.type)}
-                </span>
-                {member.isStudent && (
-                  <span className="text-xs bg-blue-100 text-blue-700 font-medium px-2 py-0.5 rounded-full">Estudiante</span>
-                )}
+          <div key={member.id} className="p-3 bg-white border border-gray-200 rounded-xl">
+            <div className="flex items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-semibold text-sm text-gray-800">{member.name}</span>
+                  <span className={cn("text-xs font-medium px-2 py-0.5 rounded-full", typeInfo?.color)}>
+                    {getFamilyMemberLabel(member.type)}
+                  </span>
+                  {member.isStudent && (
+                    <span className="text-xs bg-blue-100 text-blue-700 font-medium px-2 py-0.5 rounded-full">Estudiante</span>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 mt-0.5">{member.age} años</p>
               </div>
-              <p className="text-xs text-gray-500 mt-0.5">{member.age} años</p>
+              {!isDependency && memberPrice != null && (
+                <div className="text-right flex-shrink-0">
+                  <div className="text-sm font-bold text-gray-800">{formatCurrency(memberPrice)}</div>
+                  <div className="text-xs text-gray-400">/mes</div>
+                </div>
+              )}
+              {isDependency && (
+                <div className="text-right flex-shrink-0">
+                  <span className="text-xs text-amber-600 font-medium">Costo adicional</span>
+                  <div className="text-xs text-gray-400">a definir</div>
+                </div>
+              )}
+              <button
+                onClick={() => removeFamilyMember(member.id)}
+                className="p-2 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
             </div>
-            {price != null && (
-              <div className="text-right flex-shrink-0">
-                <div className="text-sm font-bold text-gray-800">{formatCurrency(price)}</div>
-                <div className="text-xs text-gray-400">/mes</div>
+
+            {/* Monotributo member: show aporte_mt + adicional breakdown */}
+            {isMonotributo && memberAporteMT != null && memberAdicional != null && (
+              <div className="mt-2 pt-2 border-t border-gray-100 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+                <span>Aporte AFIP: <strong className="text-gray-700">{formatCurrency(memberAporteMT)}</strong></span>
+                <span>Adicional: <strong className="text-amber-700">{formatCurrency(memberAdicional)}</strong></span>
               </div>
             )}
-            <button
-              onClick={() => removeFamilyMember(member.id)}
-              className="p-2 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
           </div>
         );
       })}
 
-      {/* Running total */}
+      {/* Running total when family members are present */}
       {totals && state.familyMembers.length > 0 && (
         <div className="bg-blue-600 rounded-xl p-4 text-white">
           <p className="text-xs font-semibold text-blue-200 uppercase tracking-wider mb-3">Costo estimado del grupo</p>
           <div className="space-y-1.5 mb-3">
+
+            {/* Holder row */}
             <div className="flex justify-between text-sm">
               <span className="text-blue-100">Titular ({state.holderAge} años)</span>
-              <span className="font-semibold">{totals.holderPrice != null ? formatCurrency(totals.holderPrice) : "—"}</span>
+              <span className="font-semibold">
+                {totals.holderPrice != null
+                  ? formatCurrency(totals.holderPrice)
+                  : isDependency ? "Accede por aporte" : "—"}
+              </span>
             </div>
-            {totals.memberPrices.map(({ member, price }) => (
-              <div key={member.id} className="flex justify-between text-sm">
-                <span className="text-blue-100">{member.name} ({member.age} años)</span>
-                <span className="font-semibold">{price != null ? formatCurrency(price) : "—"}</span>
+            {isMonotributo && totals.holderPrice != null && (
+              <div className="text-right">
+                <span className="text-xs text-blue-300">solo adicional</span>
+              </div>
+            )}
+            {isDependency && (
+              <div className="text-right">
+                <span className="text-xs text-blue-300">el titular no genera costo extra</span>
+              </div>
+            )}
+
+            {/* Family member rows */}
+            {totals.memberPrices.map(({ member, price, aporteMTPart, adicionalPart }) => (
+              <div key={member.id}>
+                <div className="flex justify-between text-sm">
+                  <span className="text-blue-100">{member.name} ({member.age} años)</span>
+                  <span className="font-semibold">
+                    {price != null
+                      ? formatCurrency(price)
+                      : isDependency ? "Costo a definir" : "—"}
+                  </span>
+                </div>
+                {isMonotributo && aporteMTPart != null && adicionalPart != null && (
+                  <div className="text-right">
+                    <span className="text-xs text-blue-300">
+                      aporte {formatCurrency(aporteMTPart)} + adicional {formatCurrency(adicionalPart)}
+                    </span>
+                  </div>
+                )}
+                {isDependency && (
+                  <div className="text-right">
+                    <span className="text-xs text-amber-300">genera costo adicional</span>
+                  </div>
+                )}
               </div>
             ))}
           </div>
-          <div className="border-t border-blue-500 pt-3 flex justify-between items-center">
-            <span className="font-bold">TOTAL MENSUAL</span>
-            <span className="text-2xl font-bold">
-              {totals.total != null ? formatCurrency(totals.total) : "—"}
-            </span>
-          </div>
+
+          {totals.total != null && (
+            <div className="border-t border-blue-500 pt-3 flex justify-between items-center">
+              <span className="font-bold">TOTAL MENSUAL</span>
+              <span className="text-2xl font-bold">{formatCurrency(totals.total)}</span>
+            </div>
+          )}
+          {isDependency && (
+            <p className="text-xs text-amber-300 mt-2 pt-2 border-t border-blue-500">
+              Titular accede por capacidad de aporte · Los familiares generan costo adicional (tabla pendiente de configuración)
+            </p>
+          )}
           {isMonotributo && (
-            <p className="text-xs text-blue-200 mt-1 text-right">Precios finales (incluye cobertura AFIP)</p>
+            <p className="text-xs text-blue-300 mt-1 text-right">Titular paga adicional · Integrantes pagan aporte + adicional</p>
           )}
         </div>
       )}
 
-      {/* Titular-only cost when no family members */}
+      {/* Titular-only cost when no family members (non-dependency) */}
       {totals && state.familyMembers.length === 0 && totals.holderPrice != null && (
         <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 flex justify-between items-center">
           <div>
-            <p className="text-xs text-gray-500">Costo titular</p>
+            <p className="text-xs text-gray-500">
+              {isMonotributo ? "Adicional a pagar (titular)" : "Costo titular"}
+            </p>
             <p className="text-sm font-semibold text-gray-700">Plan {state.selectedPlan}</p>
           </div>
           <div className="text-right">

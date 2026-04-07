@@ -1,8 +1,15 @@
 import { useMemo, useEffect } from "react";
 import { useCalculator } from "@/context/CalculatorContext";
-import { getPrice, getMonotributoAdicional, suggestPlan, formatCurrency } from "@/lib/calculator";
+import {
+  getHolderPrice,
+  getDependencyThreshold,
+  calculateCapacity,
+  getMonotributoAdicional,
+  suggestPlan,
+  formatCurrency,
+} from "@/lib/calculator";
 import type { PlanId } from "@/lib/calculator";
-import { Check, ChevronRight, Stethoscope, Pill, Hospital, Microscope, AlertTriangle } from "lucide-react";
+import { Check, ChevronRight, Stethoscope, Pill, Hospital, Microscope, AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import config from "@/data/saju-config.json";
 
@@ -19,7 +26,6 @@ const PLAN_TAG_COLORS: Record<string, string> = {
 export function Step4Plan() {
   const { state, setSelectedPlan, setStep } = useCalculator();
 
-  // Filter plans based on clientType using planAvailability from config
   const planAvailability = config.planAvailability as Record<string, string[]>;
   const availablePlanIds = useMemo<PlanId[]>(() => {
     if (!state.clientType) return ALL_PLAN_IDS;
@@ -32,7 +38,6 @@ export function Step4Plan() {
   const suggested = useMemo(() => {
     if (!state.clientType || !state.holderAge) return null;
     const s = suggestPlan(state.clientType, state.holderAge, state.salary);
-    // Make sure suggested plan is available for this client type
     return availablePlanIds.includes(s) ? s : availablePlanIds[0] ?? null;
   }, [state.clientType, state.holderAge, state.salary, availablePlanIds]);
 
@@ -40,7 +45,6 @@ export function Step4Plan() {
     if (suggested && !state.selectedPlan) {
       setSelectedPlan(suggested);
     }
-    // If current selection is not available for this client type, reset it
     if (state.selectedPlan && !availablePlanIds.includes(state.selectedPlan)) {
       setSelectedPlan(suggested ?? availablePlanIds[0]);
     }
@@ -52,8 +56,13 @@ export function Step4Plan() {
     complexStudies: boolean; description: string; tag: string;
   }>;
 
+  const isDependency = state.clientType === "dependency";
   const isMonotributo = state.clientType === "monotributo";
   const isPrepaid = state.clientType === "prepaid";
+
+  const capacity = isDependency && state.salary != null
+    ? calculateCapacity(state.salary)
+    : null;
 
   function handleContinue() {
     if (!state.selectedPlan) return;
@@ -69,21 +78,33 @@ export function Step4Plan() {
             <>Plan sugerido: <span className="font-semibold text-blue-600">{plans[suggested]?.name}</span>. Podés cambiarlo.</>
           ) : "Seleccioná un plan para el titular"}
         </p>
+
+        {isDependency && capacity != null && (
+          <div className="mt-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-xs text-blue-700">
+            Capacidad de pago: <strong>{formatCurrency(capacity)}/mes</strong>.
+            {" "}Los planes accesibles se marcan en verde.
+          </div>
+        )}
+        {isDependency && capacity == null && (
+          <div className="mt-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-500">
+            Los planes muestran el <strong>ingreso mínimo requerido</strong> (no es el precio que paga el cliente).
+          </div>
+        )}
         {isMonotributo && (
-          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-2">
-            Para monotributo se muestra el <strong>precio final</strong> y el <strong>adicional a pagar</strong> por separado.
-          </p>
+          <div className="mt-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-700">
+            Para monotributo se muestra el <strong>adicional a pagar</strong> (el titular ya aporta al plan por AFIP).
+          </div>
         )}
         {isPrepaid && availablePlanIds.includes("SAJU500") && (
-          <p className="text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 mt-2">
+          <div className="mt-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-xs text-blue-700">
             Prepago Puro incluye el plan inicial <strong>SAJU500</strong>.
-          </p>
+          </div>
         )}
         {!isPrepaid && (
-          <p className="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 mt-2 flex items-center gap-1.5">
+          <div className="mt-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-500 flex items-center gap-1.5">
             <AlertTriangle className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
             El plan SAJU500 no está disponible para este tipo de cliente.
-          </p>
+          </div>
         )}
       </div>
 
@@ -92,16 +113,26 @@ export function Step4Plan() {
           const plan = plans[planId];
           if (!plan) return null;
 
-          const price = state.clientType && state.holderAge != null
-            ? getPrice(state.clientType, state.holderAge, planId)
+          const isSelected = state.selectedPlan === planId;
+          const isSuggested = planId === suggested;
+
+          // ── Dependency: threshold-based, NOT a price ──────────────────────
+          const threshold = isDependency && state.holderAge != null
+            ? getDependencyThreshold(planId, state.holderAge)
+            : null;
+          const isAccessible = isDependency && capacity != null && threshold != null
+            ? capacity >= threshold
             : null;
 
+          // ── Monotributo: titular pays ADICIONAL only ─────────────────────
           const adicional = isMonotributo && state.holderAge != null && state.monotributoCategory
             ? getMonotributoAdicional(state.holderAge, planId, state.monotributoCategory)
             : null;
 
-          const isSelected = state.selectedPlan === planId;
-          const isSuggested = planId === suggested;
+          // ── Prepaid: direct price ─────────────────────────────────────────
+          const prepaidPrice = isPrepaid && state.holderAge != null
+            ? getHolderPrice("prepaid", state.holderAge, planId)
+            : null;
 
           return (
             <button
@@ -136,33 +167,66 @@ export function Step4Plan() {
                   <Feature icon={Microscope} text={plan.complexStudies ? "Estudios complejos" : "Sin estudios complejos"} active={plan.complexStudies} />
                 </div>
               </div>
-              <div className="flex flex-col items-end justify-between flex-shrink-0 gap-2">
-                {price != null ? (
-                  <div className={cn("text-right", isSelected ? "text-blue-800" : "text-gray-700")}>
-                    {isMonotributo ? (
-                      <>
-                        <div className="text-xs text-gray-500 mb-0.5">Precio final</div>
-                        <div className="text-sm font-bold">{formatCurrency(price)}</div>
-                        {adicional != null && adicional > 0 && (
-                          <div className="mt-1.5 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 text-right">
-                            <div className="text-xs text-amber-600">Adicional a pagar</div>
-                            <div className="text-sm font-bold text-amber-700">{formatCurrency(adicional)}</div>
-                          </div>
-                        )}
-                        {adicional === 0 && (
-                          <div className="mt-1 text-xs text-emerald-600 font-medium">Sin adicional</div>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        <div className="text-sm font-bold">{formatCurrency(price)}</div>
-                        <div className="text-xs text-gray-400">/mes titular</div>
-                      </>
+
+              <div className="flex flex-col items-end justify-between flex-shrink-0 gap-2 min-w-[90px]">
+                {/* Dependency: show threshold + accessibility badge */}
+                {isDependency && threshold != null && (
+                  <div className="text-right">
+                    <p className="text-xs text-gray-400 mb-0.5">Ingreso mín. requerido</p>
+                    <p className={cn("text-sm font-bold", isSelected ? "text-blue-800" : "text-gray-700")}>
+                      {formatCurrency(threshold)}
+                    </p>
+                    {isAccessible === true && (
+                      <div className="mt-1 flex items-center gap-1 justify-end text-emerald-600">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span className="text-xs font-semibold">Accede</span>
+                      </div>
+                    )}
+                    {isAccessible === false && (
+                      <div className="mt-1 flex items-center gap-1 justify-end text-red-400">
+                        <XCircle className="w-3.5 h-3.5" />
+                        <span className="text-xs font-semibold">No accede</span>
+                      </div>
                     )}
                   </div>
-                ) : (
-                  <div className="text-xs text-gray-400">—</div>
                 )}
+                {isDependency && threshold == null && (
+                  <span className="text-xs text-gray-400">—</span>
+                )}
+
+                {/* Monotributo: show adicional only */}
+                {isMonotributo && (
+                  <div className="text-right">
+                    {adicional != null ? (
+                      <>
+                        <p className="text-xs text-amber-600 mb-0.5">Adicional a pagar</p>
+                        <p className={cn("text-sm font-bold", isSelected ? "text-amber-700" : "text-amber-600")}>
+                          {formatCurrency(adicional)}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-0.5">/mes titular</p>
+                      </>
+                    ) : (
+                      <span className="text-xs text-gray-400">—</span>
+                    )}
+                  </div>
+                )}
+
+                {/* Prepaid: direct price */}
+                {isPrepaid && (
+                  <div className="text-right">
+                    {prepaidPrice != null ? (
+                      <>
+                        <p className={cn("text-sm font-bold", isSelected ? "text-blue-800" : "text-gray-700")}>
+                          {formatCurrency(prepaidPrice)}
+                        </p>
+                        <p className="text-xs text-gray-400">/mes titular</p>
+                      </>
+                    ) : (
+                      <span className="text-xs text-gray-400">—</span>
+                    )}
+                  </div>
+                )}
+
                 <div className={cn(
                   "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all",
                   isSelected ? "border-blue-500 bg-blue-500" : "border-gray-300"
