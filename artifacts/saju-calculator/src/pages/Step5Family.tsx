@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useCalculator } from "@/context/CalculatorContext";
-import { getFamilyMemberLabel, getPrice, formatCurrency, isStudentEligible } from "@/lib/calculator";
+import { getFamilyMemberLabel, getPrice, formatCurrency, isStudentEligible, calculateTotal } from "@/lib/calculator";
 import type { FamilyMemberType, PlanId } from "@/lib/calculator";
 import { Plus, Trash2, Users, ChevronRight, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -41,6 +41,20 @@ export function Step5Family() {
     setFormError(null);
     setShowForm(false);
   }
+
+  // Calculate running total including all current members
+  const hasEnoughData = state.clientType && state.holderAge != null && state.selectedPlan;
+  const totals = hasEnoughData
+    ? calculateTotal(
+        state.clientType!,
+        state.holderAge!,
+        state.selectedPlan as PlanId,
+        state.familyMembers,
+        state.monotributoCategory
+      )
+    : null;
+
+  const isMonotributo = state.clientType === "monotributo";
 
   return (
     <div className="space-y-5">
@@ -91,6 +105,48 @@ export function Step5Family() {
           </div>
         );
       })}
+
+      {/* Running total */}
+      {totals && state.familyMembers.length > 0 && (
+        <div className="bg-blue-600 rounded-xl p-4 text-white">
+          <p className="text-xs font-semibold text-blue-200 uppercase tracking-wider mb-3">Costo estimado del grupo</p>
+          <div className="space-y-1.5 mb-3">
+            <div className="flex justify-between text-sm">
+              <span className="text-blue-100">Titular ({state.holderAge} años)</span>
+              <span className="font-semibold">{totals.holderPrice != null ? formatCurrency(totals.holderPrice) : "—"}</span>
+            </div>
+            {totals.memberPrices.map(({ member, price }) => (
+              <div key={member.id} className="flex justify-between text-sm">
+                <span className="text-blue-100">{member.name} ({member.age} años)</span>
+                <span className="font-semibold">{price != null ? formatCurrency(price) : "—"}</span>
+              </div>
+            ))}
+          </div>
+          <div className="border-t border-blue-500 pt-3 flex justify-between items-center">
+            <span className="font-bold">TOTAL MENSUAL</span>
+            <span className="text-2xl font-bold">
+              {totals.total != null ? formatCurrency(totals.total) : "—"}
+            </span>
+          </div>
+          {isMonotributo && (
+            <p className="text-xs text-blue-200 mt-1 text-right">Precios finales (incluye cobertura AFIP)</p>
+          )}
+        </div>
+      )}
+
+      {/* Titular-only cost when no family members */}
+      {totals && state.familyMembers.length === 0 && totals.holderPrice != null && (
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 flex justify-between items-center">
+          <div>
+            <p className="text-xs text-gray-500">Costo titular</p>
+            <p className="text-sm font-semibold text-gray-700">Plan {state.selectedPlan}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-lg font-bold text-gray-900">{formatCurrency(totals.holderPrice)}</p>
+            <p className="text-xs text-gray-400">/mes</p>
+          </div>
+        </div>
+      )}
 
       {showForm && (
         <div className="border-2 border-blue-200 bg-blue-50/50 rounded-xl p-4 space-y-4">

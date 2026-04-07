@@ -233,7 +233,8 @@
         "required": false,
         "type": "copy",
         "howToObtain": "Lo proporciona el empleador",
-        "purpose": "Si no tiene Clave Fiscal, prueba relación laboral"
+        "purpose": "Solo si no tiene Clave Fiscal: prueba relación laboral",
+        "condition": "no_clave_fiscal"
       }
     ],
     "monotributo": [
@@ -380,6 +381,25 @@
         }
       ]
     }
+  },
+
+  "familyCommonDocuments": [
+    {
+      "id": "DDJJ_GRUPO_FAMILIAR",
+      "name": "Declaración Jurada de Grupo Familiar",
+      "required": true,
+      "type": "form",
+      "howToObtain": "Formulario provisto por SAJU al momento de la afiliación. Lo completa el vendedor junto al titular.",
+      "purpose": "Declara los integrantes del grupo familiar a incorporar"
+    }
+  ],
+
+  "planAvailability": {
+    "SAJU500":  ["prepaid"],
+    "SAJU1100": ["dependency", "monotributo", "prepaid"],
+    "SAJU2100": ["dependency", "monotributo", "prepaid"],
+    "SAJU3100": ["dependency", "monotributo", "prepaid"],
+    "SAJU4100": ["dependency", "monotributo", "prepaid"]
   },
 
   "faq": [

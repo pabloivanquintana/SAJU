@@ -1,7 +1,7 @@
 import { useCalculator } from "@/context/CalculatorContext";
 import { getRequiredDocuments } from "@/lib/calculator";
-import type { DocumentStatus } from "@/lib/calculator";
-import { CheckCircle2, AlertCircle, Clock, ChevronRight, Info } from "lucide-react";
+import type { DocumentStatus, RequiredDoc } from "@/lib/calculator";
+import { CheckCircle2, AlertCircle, Clock, ChevronRight, Info, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const STATUS_OPTIONS: { value: DocumentStatus["status"]; label: string; icon: React.ElementType; color: string }[] = [
@@ -15,9 +15,13 @@ export function Step6Documentation() {
 
   if (!state.clientType) return null;
 
-  const requiredDocs = getRequiredDocuments(state.clientType, state.familyMembers);
+  const allDocs = getRequiredDocuments(state.clientType, state.familyMembers);
 
-  const groups = requiredDocs.reduce<Record<string, typeof requiredDocs>>((acc, doc) => {
+  // Separate warning docs from regular docs
+  const warningDocs = allDocs.filter((d) => d.warning);
+  const regularDocs = allDocs.filter((d) => !d.warning);
+
+  const groups = regularDocs.reduce<Record<string, RequiredDoc[]>>((acc, doc) => {
     if (!acc[doc.group]) acc[doc.group] = [];
     acc[doc.group].push(doc);
     return acc;
@@ -27,9 +31,10 @@ export function Step6Documentation() {
     return state.documentStatuses.find((d) => d.documentId === docId)?.status ?? "pending";
   };
 
-  const totalDocs = requiredDocs.length;
-  const availableCount = requiredDocs.filter((d) => getStatus(d.id) === "available").length;
-  const missingCount = requiredDocs.filter((d) => getStatus(d.id) === "missing").length;
+  const totalDocs = regularDocs.length;
+  const availableCount = regularDocs.filter((d) => getStatus(d.id) === "available").length;
+  const missingCount = regularDocs.filter((d) => getStatus(d.id) === "missing").length;
+  const pendingCount = totalDocs - availableCount - missingCount;
 
   return (
     <div className="space-y-5">
@@ -38,13 +43,30 @@ export function Step6Documentation() {
         <p className="text-sm text-gray-500 mt-1">Marcá el estado de cada documento para llevar el control</p>
       </div>
 
+      {/* Warning notices for ambiguous cases */}
+      {warningDocs.length > 0 && (
+        <div className="space-y-2">
+          {warningDocs.map((doc) => (
+            <div key={doc.id} className="flex items-start gap-3 bg-amber-50 border border-amber-300 rounded-xl p-3">
+              <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-bold text-amber-800">{doc.name}</p>
+                <p className="text-xs text-amber-700 mt-0.5">{doc.purpose}</p>
+                <p className="text-xs text-amber-600 mt-1 italic">{doc.howToObtain}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Progress summary */}
       <div className="grid grid-cols-3 gap-2">
         <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-center">
           <div className="text-2xl font-bold text-emerald-600">{availableCount}</div>
           <div className="text-xs text-emerald-600">Presentados</div>
         </div>
         <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 text-center">
-          <div className="text-2xl font-bold text-amber-600">{totalDocs - availableCount - missingCount}</div>
+          <div className="text-2xl font-bold text-amber-600">{pendingCount}</div>
           <div className="text-xs text-amber-600">Pendientes</div>
         </div>
         <div className="bg-red-50 border border-red-100 rounded-xl p-3 text-center">
@@ -53,6 +75,7 @@ export function Step6Documentation() {
         </div>
       </div>
 
+      {/* Document groups */}
       {Object.entries(groups).map(([group, docs]) => (
         <div key={group} className="space-y-2">
           <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider px-1">{group}</h3>
@@ -79,6 +102,9 @@ export function Step6Documentation() {
                       )}
                       {doc.critical && (
                         <span className="text-xs bg-red-100 text-red-600 font-semibold px-1.5 py-0.5 rounded">CRÍTICO</span>
+                      )}
+                      {doc.condition === "no_clave_fiscal" && (
+                        <span className="text-xs bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded border border-amber-200">Solo si no tiene Clave Fiscal</span>
                       )}
                     </div>
                     <p className="text-xs text-gray-500 mt-1">{doc.purpose}</p>

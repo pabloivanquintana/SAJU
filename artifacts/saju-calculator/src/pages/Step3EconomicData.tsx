@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCalculator } from "@/context/CalculatorContext";
 import { calculateCapacity, formatCurrency } from "@/lib/calculator";
 import { ChevronRight, Info } from "lucide-react";
@@ -13,10 +13,13 @@ export function Step3EconomicData() {
   const [salaryInput, setSalaryInput] = useState(state.salary?.toString() ?? "");
   const [selectedCategory, setSelectedCategory] = useState(state.monotributoCategory ?? "");
 
-  if (state.clientType === "prepaid") {
-    setStep(4);
-    return null;
-  }
+  useEffect(() => {
+    if (state.clientType === "prepaid") {
+      setStep(4);
+    }
+  }, [state.clientType, setStep]);
+
+  if (state.clientType === "prepaid") return null;
 
   function handleContinue() {
     if (state.clientType === "dependency") {

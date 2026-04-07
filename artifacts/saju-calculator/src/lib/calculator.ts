@@ -174,46 +174,108 @@ export function isStudentEligible(age: number, isStudent: boolean): boolean {
   return false;
 }
 
-export function getRequiredDocuments(
-  clientType: ClientType,
-  familyMembers: FamilyMember[]
-): Array<{
+export interface RequiredDoc {
   id: string;
   name: string;
   purpose: string;
   howToObtain: string;
   required: boolean;
   critical?: boolean;
+  condition?: string;
+  warning?: string;
   group: string;
-}> {
-  const docs = config.requiredDocuments as Record<string, unknown>;
-  const holderDocs = (docs[clientType] as Array<{ id: string; name: string; purpose: string; howToObtain: string; required: boolean; critical?: boolean }>).map((d) => ({
-    ...d,
-    group: "Titular",
-  }));
+}
 
-  const familyDocs: typeof holderDocs = [];
+type RawDoc = {
+  id: string;
+  name: string;
+  purpose: string;
+  howToObtain: string;
+  required: boolean;
+  critical?: boolean;
+  condition?: string;
+};
 
-  familyMembers.forEach((member) => {
-    const familyDocsSource = docs.family_members as Record<string, Array<{ id: string; name: string; purpose: string; howToObtain: string; required: boolean; critical?: boolean }>>;
+/**
+ * Rules:
+ * 1. Load base docs per client type (requiredDocuments[clientType])
+ * 2. Filter conditional docs: RECIBO_SUELDO only if CLAVE_FISCAL is NOT in the titular docs
+ * 3. If any family member: add familyCommonDocuments (deduplicated by id)
+ * 4. Per family member: add specific docs from requiredDocuments.family_members (deduplicated)
+ * 5. Add warning doc if child age is ambiguous (21-25, not marked student)
+ */
+export function getRequiredDocuments(
+  clientType: ClientType,
+  familyMembers: FamilyMember[]
+): RequiredDoc[] {
+  const docsConfig = config.requiredDocuments as Record<string, unknown>;
 
-    let memberDocKey: string = member.type;
-    if (member.type === "child" && member.age > 21 && member.isStudent) {
-      memberDocKey = "student_child";
+  const rawHolderDocs = docsConfig[clientType] as RawDoc[];
+  const hasClavesFiscal = rawHolderDocs.some((d) => d.id === "CLAVE_FISCAL");
+
+  // Step 1+2: titular docs with conditional filtering
+  const holderDocs: RequiredDoc[] = rawHolderDocs
+    .filter((d) => {
+      if (d.condition === "no_clave_fiscal") return !hasClavesFiscal;
+      return true;
+    })
+    .map((d) => ({ ...d, group: "Titular" }));
+
+  const seenBaseIds = new Set<string>(holderDocs.map((d) => d.id));
+  const result: RequiredDoc[] = [...holderDocs];
+
+  if (familyMembers.length > 0) {
+    // Step 3: common family docs (add once, deduplicated)
+    const commonDocs = config.familyCommonDocuments as RawDoc[];
+    for (const doc of commonDocs) {
+      if (!seenBaseIds.has(doc.id)) {
+        seenBaseIds.add(doc.id);
+        result.push({ ...doc, group: "Grupo Familiar (común)" });
+      }
     }
 
-    const memberDocs = familyDocsSource[memberDocKey] ?? familyDocsSource[member.type] ?? [];
-    memberDocs.forEach((d) => {
-      familyDocs.push({
-        ...d,
-        id: `${d.id}_${member.id}`,
-        name: `${d.name} (${member.name || memberLabel(member.type)})`,
-        group: member.name || memberLabel(member.type),
-      });
-    });
-  });
+    // Step 4+5: per-member docs
+    const familyDocsSource = docsConfig.family_members as Record<string, RawDoc[]>;
 
-  return [...holderDocs, ...familyDocs];
+    familyMembers.forEach((member) => {
+      let memberDocKey: string = member.type;
+      if (member.type === "child" && member.age > 21 && member.isStudent) {
+        memberDocKey = "student_child";
+      }
+
+      const memberName = member.name || memberLabel(member.type);
+      const memberDocs = familyDocsSource[memberDocKey] ?? familyDocsSource[member.type] ?? [];
+      const seenMemberDocIds = new Set<string>();
+
+      memberDocs.forEach((d) => {
+        if (!seenMemberDocIds.has(d.id)) {
+          seenMemberDocIds.add(d.id);
+          result.push({
+            ...d,
+            id: `${d.id}_${member.id}`,
+            name: `${d.name} — ${memberName}`,
+            group: memberName,
+          });
+        }
+      });
+
+      // Warning for age-ambiguous child
+      if (member.type === "child" && member.age > 21 && member.age <= 25 && !member.isStudent) {
+        result.push({
+          id: `WARNING_ESTUDIANTE_${member.id}`,
+          name: `Verificar condición estudiantil — ${memberName}`,
+          purpose: `${memberName} tiene ${member.age} años. Sin certificado de estudiante, la cobertura no aplica para mayores de 21.`,
+          howToObtain: "Confirmar con el titular si el hijo es estudiante y agregar certificado de facultad o institución educativa.",
+          required: true,
+          critical: true,
+          warning: "ambiguous_student",
+          group: memberName,
+        });
+      }
+    });
+  }
+
+  return result;
 }
 
 function memberLabel(type: FamilyMemberType): string {

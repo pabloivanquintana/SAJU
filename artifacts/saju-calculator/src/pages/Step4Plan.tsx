@@ -2,11 +2,11 @@ import { useMemo, useEffect } from "react";
 import { useCalculator } from "@/context/CalculatorContext";
 import { getPrice, getMonotributoAdicional, suggestPlan, formatCurrency } from "@/lib/calculator";
 import type { PlanId } from "@/lib/calculator";
-import { Check, ChevronRight, Stethoscope, Pill, Hospital, Microscope } from "lucide-react";
+import { Check, ChevronRight, Stethoscope, Pill, Hospital, Microscope, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import config from "@/data/saju-config.json";
 
-const PLAN_IDS: PlanId[] = ["SAJU500", "SAJU1100", "SAJU2100", "SAJU3100", "SAJU4100"];
+const ALL_PLAN_IDS: PlanId[] = ["SAJU500", "SAJU1100", "SAJU2100", "SAJU3100", "SAJU4100"];
 
 const PLAN_TAG_COLORS: Record<string, string> = {
   "Inicial": "bg-slate-100 text-slate-600",
@@ -19,16 +19,32 @@ const PLAN_TAG_COLORS: Record<string, string> = {
 export function Step4Plan() {
   const { state, setSelectedPlan, setStep } = useCalculator();
 
+  // Filter plans based on clientType using planAvailability from config
+  const planAvailability = config.planAvailability as Record<string, string[]>;
+  const availablePlanIds = useMemo<PlanId[]>(() => {
+    if (!state.clientType) return ALL_PLAN_IDS;
+    return ALL_PLAN_IDS.filter((id) => {
+      const allowed = planAvailability[id];
+      return allowed ? allowed.includes(state.clientType!) : true;
+    });
+  }, [state.clientType]);
+
   const suggested = useMemo(() => {
     if (!state.clientType || !state.holderAge) return null;
-    return suggestPlan(state.clientType, state.holderAge, state.salary);
-  }, [state.clientType, state.holderAge, state.salary]);
+    const s = suggestPlan(state.clientType, state.holderAge, state.salary);
+    // Make sure suggested plan is available for this client type
+    return availablePlanIds.includes(s) ? s : availablePlanIds[0] ?? null;
+  }, [state.clientType, state.holderAge, state.salary, availablePlanIds]);
 
   useEffect(() => {
     if (suggested && !state.selectedPlan) {
       setSelectedPlan(suggested);
     }
-  }, [suggested, state.selectedPlan, setSelectedPlan]);
+    // If current selection is not available for this client type, reset it
+    if (state.selectedPlan && !availablePlanIds.includes(state.selectedPlan)) {
+      setSelectedPlan(suggested ?? availablePlanIds[0]);
+    }
+  }, [suggested, state.selectedPlan, availablePlanIds, setSelectedPlan]);
 
   const plans = config.plans as Record<string, {
     id: string; name: string; coinsurance: boolean;
@@ -37,6 +53,7 @@ export function Step4Plan() {
   }>;
 
   const isMonotributo = state.clientType === "monotributo";
+  const isPrepaid = state.clientType === "prepaid";
 
   function handleContinue() {
     if (!state.selectedPlan) return;
@@ -57,10 +74,21 @@ export function Step4Plan() {
             Para monotributo se muestra el <strong>precio final</strong> y el <strong>adicional a pagar</strong> por separado.
           </p>
         )}
+        {isPrepaid && availablePlanIds.includes("SAJU500") && (
+          <p className="text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 mt-2">
+            Prepago Puro incluye el plan inicial <strong>SAJU500</strong>.
+          </p>
+        )}
+        {!isPrepaid && (
+          <p className="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 mt-2 flex items-center gap-1.5">
+            <AlertTriangle className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+            El plan SAJU500 no está disponible para este tipo de cliente.
+          </p>
+        )}
       </div>
 
       <div className="space-y-3">
-        {PLAN_IDS.map((planId) => {
+        {availablePlanIds.map((planId) => {
           const plan = plans[planId];
           if (!plan) return null;
 

@@ -1,7 +1,7 @@
 import { useCalculator } from "@/context/CalculatorContext";
 import { calculateTotal, formatCurrency, getFamilyMemberLabel, getRequiredDocuments } from "@/lib/calculator";
-import type { DocumentStatus, MemberPriceResult, PlanId } from "@/lib/calculator";
-import { CheckCircle2, AlertCircle, Clock, RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
+import type { DocumentStatus, MemberPriceResult, PlanId, RequiredDoc } from "@/lib/calculator";
+import { CheckCircle2, AlertCircle, Clock, RotateCcw, ChevronDown, ChevronUp, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import config from "@/data/saju-config.json";
@@ -38,34 +38,35 @@ export function Step7Summary() {
   );
   const isMonotributo = state.clientType === "monotributo";
 
-  const requiredDocs = getRequiredDocuments(state.clientType, state.familyMembers);
+  const allDocs = getRequiredDocuments(state.clientType, state.familyMembers);
+  const regularDocs = allDocs.filter((d) => !d.warning);
+  const warningDocs = allDocs.filter((d) => d.warning);
 
   const getStatus = (docId: string): DocumentStatus["status"] => {
     return state.documentStatuses.find((d) => d.documentId === docId)?.status ?? "pending";
   };
 
-  const availableDocs = requiredDocs.filter((d) => getStatus(d.id) === "available");
-  const pendingDocs = requiredDocs.filter((d) => getStatus(d.id) === "pending");
-  const missingDocs = requiredDocs.filter((d) => getStatus(d.id) === "missing");
+  const availableDocs = regularDocs.filter((d) => getStatus(d.id) === "available");
+  const pendingDocs = regularDocs.filter((d) => getStatus(d.id) === "pending");
+  const missingDocs = regularDocs.filter((d) => getStatus(d.id) === "missing");
 
   const faq = config.faq as Array<{ id: string; question: string; answer: string }>;
   const nextSteps = config.nextSteps as Array<{ step: number; title: string; description: string }>;
 
   return (
     <div className="space-y-5">
-      <div>
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-gray-900">Resumen del caso</h2>
-          <button
-            onClick={resetAll}
-            className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 transition-colors px-2 py-1.5 rounded-lg hover:bg-gray-100"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            Nuevo caso
-          </button>
-        </div>
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold text-gray-900">Resumen del caso</h2>
+        <button
+          onClick={resetAll}
+          className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 transition-colors px-2 py-1.5 rounded-lg hover:bg-gray-100"
+        >
+          <RotateCcw className="w-3.5 h-3.5" />
+          Nuevo caso
+        </button>
       </div>
 
+      {/* Plan + client info */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <div className="bg-blue-600 px-4 py-3">
           <p className="text-xs font-semibold text-blue-200 uppercase tracking-wider">Plan seleccionado</p>
@@ -83,72 +84,89 @@ export function Step7Summary() {
         </div>
       </div>
 
+      {/* Cost breakdown */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+        <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
           <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Desglose de costos</p>
-        </div>
-        <div className="p-4 space-y-2">
           {isMonotributo && (
-            <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-2">
-              Los precios son <strong>precio final</strong>. El adicional es el monto extra sobre el aporte AFIP.
-            </div>
+            <span className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded px-2 py-0.5">
+              Precios finales
+            </span>
           )}
-          <CostRow
-            label={`Titular (${state.holderAge} años)`}
-            price={holderPrice}
-            adicional={isMonotributo ? holderAdicional : null}
-          />
-          {memberPrices.map(({ member, price, adicional }: MemberPriceResult) => (
-            <CostRow
-              key={member.id}
-              label={`${member.name || getFamilyMemberLabel(member.type)} (${member.age} años)`}
-              price={price}
-              tag={getFamilyMemberLabel(member.type)}
-              adicional={isMonotributo ? adicional : null}
+        </div>
+        <div className="p-4">
+          {/* Per-person breakdown */}
+          <div className="space-y-3">
+            <PersonCostRow
+              label="Titular"
+              sublabel={`${state.holderAge} años`}
+              price={holderPrice}
+              adicional={isMonotributo ? holderAdicional : null}
             />
-          ))}
+            {memberPrices.map(({ member, price, adicional }: MemberPriceResult) => (
+              <PersonCostRow
+                key={member.id}
+                label={member.name || getFamilyMemberLabel(member.type)}
+                sublabel={`${member.age} años · ${getFamilyMemberLabel(member.type)}`}
+                price={price}
+                adicional={isMonotributo ? adicional : null}
+              />
+            ))}
+          </div>
+
+          {/* Total */}
           {total != null && (
-            <>
-              <div className="border-t border-gray-200 pt-3 mt-3" />
+            <div className="mt-4 bg-blue-600 rounded-xl px-4 py-4">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-gray-900">TOTAL MENSUAL</span>
-                <span className="text-2xl font-bold text-blue-700">{formatCurrency(total)}</span>
+                <div>
+                  <p className="text-xs font-semibold text-blue-200 uppercase tracking-wider">Total mensual</p>
+                  <p className="text-xs text-blue-200 mt-0.5">
+                    {state.familyMembers.length > 0
+                      ? `Titular + ${state.familyMembers.length} familiar${state.familyMembers.length > 1 ? "es" : ""}`
+                      : "Solo titular"}
+                  </p>
+                </div>
+                <span className="text-3xl font-bold text-white">{formatCurrency(total)}</span>
               </div>
               {isMonotributo && (
-                <p className="text-xs text-gray-500 text-right">Total = suma de precios finales</p>
+                <p className="text-xs text-blue-200 mt-2 pt-2 border-t border-blue-500">
+                  Total = suma de precios finales por persona
+                </p>
               )}
-            </>
+            </div>
           )}
         </div>
       </div>
 
+      {/* Warning notices */}
+      {warningDocs.length > 0 && (
+        <div className="space-y-2">
+          {warningDocs.map((doc) => (
+            <div key={doc.id} className="flex items-start gap-3 bg-amber-50 border border-amber-300 rounded-xl p-3">
+              <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-bold text-amber-800">{doc.name}</p>
+                <p className="text-xs text-amber-700 mt-0.5">{doc.purpose}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Documentation status */}
       <div className="space-y-3">
         {missingDocs.length > 0 && (
-          <DocSection
-            title="Documentación faltante"
-            docs={missingDocs}
-            statusKey="missing"
-            variant="danger"
-          />
+          <DocSection title="Documentación faltante" docs={missingDocs} statusKey="missing" variant="danger" />
         )}
         {pendingDocs.length > 0 && (
-          <DocSection
-            title="Documentación pendiente"
-            docs={pendingDocs}
-            statusKey="pending"
-            variant="warning"
-          />
+          <DocSection title="Documentación pendiente" docs={pendingDocs} statusKey="pending" variant="warning" />
         )}
         {availableDocs.length > 0 && (
-          <DocSection
-            title="Documentación presentada"
-            docs={availableDocs}
-            statusKey="available"
-            variant="success"
-          />
+          <DocSection title="Documentación presentada" docs={availableDocs} statusKey="available" variant="success" />
         )}
       </div>
 
+      {/* Next steps */}
       <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
         <button
           onClick={() => setShowNextSteps((v) => !v)}
@@ -159,7 +177,7 @@ export function Step7Summary() {
         </button>
         {showNextSteps && (
           <div className="px-4 pb-4 space-y-3 border-t border-gray-100">
-            {nextSteps.map((step) => (
+            {nextSteps?.map((step) => (
               <div key={step.step} className="flex gap-3 pt-3">
                 <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex items-center justify-center flex-shrink-0">
                   {step.step}
@@ -174,6 +192,7 @@ export function Step7Summary() {
         )}
       </div>
 
+      {/* FAQ */}
       <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
         <button
           onClick={() => setShowFaq((v) => !v)}
@@ -203,34 +222,42 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function CostRow({ label, price, tag, adicional }: { label: string; price: number | null; tag?: string; adicional?: number | null }) {
+function PersonCostRow({
+  label,
+  sublabel,
+  price,
+  adicional,
+}: {
+  label: string;
+  sublabel: string;
+  price: number | null;
+  adicional?: number | null;
+}) {
   return (
-    <div className="text-sm">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-gray-700">{label}</span>
-          {tag && <span className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">{tag}</span>}
-        </div>
-        <div className="text-right">
-          {adicional != null ? (
-            <span className="text-xs text-gray-500">Precio final</span>
-          ) : null}
-          <div className="font-semibold text-gray-800">
-            {price != null ? formatCurrency(price) : "—"}
-          </div>
-        </div>
+    <div className="flex items-start justify-between gap-2 py-2 border-b border-gray-100 last:border-0">
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-gray-800">{label}</p>
+        <p className="text-xs text-gray-500">{sublabel}</p>
       </div>
-      {adicional != null && (
-        <div className="flex justify-end mt-1">
-          {adicional > 0 ? (
-            <span className="text-xs bg-amber-50 text-amber-700 border border-amber-200 rounded px-2 py-0.5 font-medium">
-              Adicional a pagar: {formatCurrency(adicional)}
-            </span>
-          ) : (
-            <span className="text-xs text-emerald-600 font-medium">Sin adicional</span>
-          )}
-        </div>
-      )}
+      <div className="text-right flex-shrink-0">
+        {adicional != null ? (
+          <p className="text-xs text-gray-400 mb-0.5">Precio final</p>
+        ) : null}
+        <p className="text-sm font-bold text-gray-900">
+          {price != null ? formatCurrency(price) : "—"}
+        </p>
+        {adicional != null && (
+          <>
+            {adicional > 0 ? (
+              <div className="mt-1 bg-amber-50 border border-amber-200 rounded px-2 py-0.5">
+                <p className="text-xs text-amber-600 font-medium">+ {formatCurrency(adicional)} adicional</p>
+              </div>
+            ) : (
+              <p className="text-xs text-emerald-600 mt-0.5">Sin adicional</p>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -242,7 +269,7 @@ function DocSection({
   variant,
 }: {
   title: string;
-  docs: Array<{ id: string; name: string; purpose: string; critical?: boolean }>;
+  docs: RequiredDoc[];
   statusKey: DocumentStatus["status"];
   variant: "success" | "warning" | "danger";
 }) {
@@ -262,8 +289,8 @@ function DocSection({
       </div>
       <div className="space-y-1.5">
         {docs.map((doc) => (
-          <div key={doc.id} className="flex items-center gap-2">
-            <div className="w-1 h-1 rounded-full bg-current flex-shrink-0 mt-0.5" />
+          <div key={doc.id} className="flex items-start gap-2">
+            <div className="w-1 h-1 rounded-full bg-current flex-shrink-0 mt-1.5" />
             <span className="text-xs text-gray-700">
               {doc.name}
               {doc.critical && <span className="ml-1.5 text-red-600 font-semibold">(CRÍTICO)</span>}
