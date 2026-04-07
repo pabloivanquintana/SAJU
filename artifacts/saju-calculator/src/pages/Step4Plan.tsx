@@ -1,14 +1,15 @@
 import { useMemo, useEffect } from "react";
 import { useCalculator } from "@/context/CalculatorContext";
-import { getPrice, suggestPlan, formatCurrency } from "@/lib/calculator";
+import { getPrice, getMonotributoAdicional, suggestPlan, formatCurrency } from "@/lib/calculator";
 import type { PlanId } from "@/lib/calculator";
 import { Check, ChevronRight, Stethoscope, Pill, Hospital, Microscope } from "lucide-react";
 import { cn } from "@/lib/utils";
 import config from "@/data/saju-config.json";
 
-const PLAN_IDS: PlanId[] = ["SAJU1100", "SAJU2100", "SAJU3100", "SAJU4100"];
+const PLAN_IDS: PlanId[] = ["SAJU500", "SAJU1100", "SAJU2100", "SAJU3100", "SAJU4100"];
 
 const PLAN_TAG_COLORS: Record<string, string> = {
+  "Inicial": "bg-slate-100 text-slate-600",
   "Económico": "bg-gray-100 text-gray-600",
   "Más Vendido": "bg-emerald-100 text-emerald-700",
   "Premium": "bg-purple-100 text-purple-700",
@@ -20,8 +21,8 @@ export function Step4Plan() {
 
   const suggested = useMemo(() => {
     if (!state.clientType || !state.holderAge) return null;
-    return suggestPlan(state.clientType, state.holderAge, state.salary, state.monotributoCategory);
-  }, [state.clientType, state.holderAge, state.salary, state.monotributoCategory]);
+    return suggestPlan(state.clientType, state.holderAge, state.salary);
+  }, [state.clientType, state.holderAge, state.salary]);
 
   useEffect(() => {
     if (suggested && !state.selectedPlan) {
@@ -34,6 +35,8 @@ export function Step4Plan() {
     pharmacyDiscount: number; internationType: string;
     complexStudies: boolean; description: string; tag: string;
   }>;
+
+  const isMonotributo = state.clientType === "monotributo";
 
   function handleContinue() {
     if (!state.selectedPlan) return;
@@ -49,15 +52,26 @@ export function Step4Plan() {
             <>Plan sugerido: <span className="font-semibold text-blue-600">{plans[suggested]?.name}</span>. Podés cambiarlo.</>
           ) : "Seleccioná un plan para el titular"}
         </p>
+        {isMonotributo && (
+          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-2">
+            Para monotributo se muestra el <strong>precio final</strong> y el <strong>adicional a pagar</strong> por separado.
+          </p>
+        )}
       </div>
 
       <div className="space-y-3">
         {PLAN_IDS.map((planId) => {
           const plan = plans[planId];
           if (!plan) return null;
+
           const price = state.clientType && state.holderAge != null
-            ? getPrice(state.clientType, state.holderAge, planId, state.monotributoCategory ?? undefined)
+            ? getPrice(state.clientType, state.holderAge, planId)
             : null;
+
+          const adicional = isMonotributo && state.holderAge != null && state.monotributoCategory
+            ? getMonotributoAdicional(state.holderAge, planId, state.monotributoCategory)
+            : null;
+
           const isSelected = state.selectedPlan === planId;
           const isSuggested = planId === suggested;
 
@@ -94,11 +108,29 @@ export function Step4Plan() {
                   <Feature icon={Microscope} text={plan.complexStudies ? "Estudios complejos" : "Sin estudios complejos"} active={plan.complexStudies} />
                 </div>
               </div>
-              <div className="flex flex-col items-end justify-between flex-shrink-0">
+              <div className="flex flex-col items-end justify-between flex-shrink-0 gap-2">
                 {price != null ? (
                   <div className={cn("text-right", isSelected ? "text-blue-800" : "text-gray-700")}>
-                    <div className="text-sm font-bold">{formatCurrency(price)}</div>
-                    <div className="text-xs text-gray-400">/mes titular</div>
+                    {isMonotributo ? (
+                      <>
+                        <div className="text-xs text-gray-500 mb-0.5">Precio final</div>
+                        <div className="text-sm font-bold">{formatCurrency(price)}</div>
+                        {adicional != null && adicional > 0 && (
+                          <div className="mt-1.5 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 text-right">
+                            <div className="text-xs text-amber-600">Adicional a pagar</div>
+                            <div className="text-sm font-bold text-amber-700">{formatCurrency(adicional)}</div>
+                          </div>
+                        )}
+                        {adicional === 0 && (
+                          <div className="mt-1 text-xs text-emerald-600 font-medium">Sin adicional</div>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-sm font-bold">{formatCurrency(price)}</div>
+                        <div className="text-xs text-gray-400">/mes titular</div>
+                      </>
+                    )}
                   </div>
                 ) : (
                   <div className="text-xs text-gray-400">—</div>

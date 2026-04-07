@@ -1,6 +1,6 @@
 import { useCalculator } from "@/context/CalculatorContext";
 import { calculateTotal, formatCurrency, getFamilyMemberLabel, getRequiredDocuments } from "@/lib/calculator";
-import type { DocumentStatus, PlanId } from "@/lib/calculator";
+import type { DocumentStatus, MemberPriceResult, PlanId } from "@/lib/calculator";
 import { CheckCircle2, AlertCircle, Clock, RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -29,13 +29,14 @@ export function Step7Summary() {
   const plans = config.plans as Record<string, { id: string; name: string; pharmacyDiscount: number; tag: string }>;
   const plan = plans[planId];
 
-  const { holderPrice, memberPrices, total } = calculateTotal(
+  const { holderPrice, holderAdicional, memberPrices, total } = calculateTotal(
     state.clientType,
     state.holderAge,
     planId,
     state.familyMembers,
     state.monotributoCategory
   );
+  const isMonotributo = state.clientType === "monotributo";
 
   const requiredDocs = getRequiredDocuments(state.clientType, state.familyMembers);
 
@@ -87,13 +88,23 @@ export function Step7Summary() {
           <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Desglose de costos</p>
         </div>
         <div className="p-4 space-y-2">
-          <CostRow label={`Titular (${state.holderAge} años)`} price={holderPrice} />
-          {memberPrices.map(({ member, price }) => (
+          {isMonotributo && (
+            <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-2">
+              Los precios son <strong>precio final</strong>. El adicional es el monto extra sobre el aporte AFIP.
+            </div>
+          )}
+          <CostRow
+            label={`Titular (${state.holderAge} años)`}
+            price={holderPrice}
+            adicional={isMonotributo ? holderAdicional : null}
+          />
+          {memberPrices.map(({ member, price, adicional }: MemberPriceResult) => (
             <CostRow
               key={member.id}
               label={`${member.name || getFamilyMemberLabel(member.type)} (${member.age} años)`}
               price={price}
               tag={getFamilyMemberLabel(member.type)}
+              adicional={isMonotributo ? adicional : null}
             />
           ))}
           {total != null && (
@@ -103,6 +114,9 @@ export function Step7Summary() {
                 <span className="font-bold text-gray-900">TOTAL MENSUAL</span>
                 <span className="text-2xl font-bold text-blue-700">{formatCurrency(total)}</span>
               </div>
+              {isMonotributo && (
+                <p className="text-xs text-gray-500 text-right">Total = suma de precios finales</p>
+              )}
             </>
           )}
         </div>
@@ -189,16 +203,34 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function CostRow({ label, price, tag }: { label: string; price: number | null; tag?: string }) {
+function CostRow({ label, price, tag, adicional }: { label: string; price: number | null; tag?: string; adicional?: number | null }) {
   return (
-    <div className="flex items-center justify-between text-sm">
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-gray-700">{label}</span>
-        {tag && <span className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">{tag}</span>}
+    <div className="text-sm">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-gray-700">{label}</span>
+          {tag && <span className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">{tag}</span>}
+        </div>
+        <div className="text-right">
+          {adicional != null ? (
+            <span className="text-xs text-gray-500">Precio final</span>
+          ) : null}
+          <div className="font-semibold text-gray-800">
+            {price != null ? formatCurrency(price) : "—"}
+          </div>
+        </div>
       </div>
-      <span className="font-semibold text-gray-800">
-        {price != null ? formatCurrency(price) : "—"}
-      </span>
+      {adicional != null && (
+        <div className="flex justify-end mt-1">
+          {adicional > 0 ? (
+            <span className="text-xs bg-amber-50 text-amber-700 border border-amber-200 rounded px-2 py-0.5 font-medium">
+              Adicional a pagar: {formatCurrency(adicional)}
+            </span>
+          ) : (
+            <span className="text-xs text-emerald-600 font-medium">Sin adicional</span>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -59,7 +59,7 @@ export function Step5Family() {
 
       {state.familyMembers.map((member) => {
         const price = state.clientType && state.selectedPlan
-          ? getPrice(state.clientType, member.age, state.selectedPlan as PlanId, state.monotributoCategory ?? undefined)
+          ? getPrice(state.clientType, member.age, state.selectedPlan as PlanId)
           : null;
         const typeInfo = MEMBER_TYPES.find((m) => m.type === member.type);
         return (
