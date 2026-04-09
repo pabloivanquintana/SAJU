@@ -7,6 +7,7 @@ import {
   calculateCapacity,
   getDependencyPlanPrice,
   getDependencyDifference,
+  getDependencySaldoAFavor,
 } from "@/lib/calculator";
 import type { DocumentStatus, MemberPriceResult, PlanId, RequiredDoc } from "@/lib/calculator";
 import { CheckCircle2, AlertCircle, Clock, RotateCcw, ChevronDown, ChevronUp, AlertTriangle, CheckCircle } from "lucide-react";
@@ -58,6 +59,9 @@ export function Step7Summary() {
     : null;
   const dependencyDifference = isDependency && state.salary != null
     ? getDependencyDifference(state.salary, planId, state.holderAge)
+    : null;
+  const dependencySaldo = isDependency && state.salary != null
+    ? getDependencySaldoAFavor(state.salary, planId, state.holderAge)
     : null;
 
   const allDocs = getRequiredDocuments(state.clientType, state.familyMembers);
@@ -135,6 +139,7 @@ export function Step7Summary() {
                 planPrice={dependencyPlanPrice}
                 capacity={capacity}
                 diferencia={dependencyDifference}
+                saldoAFavor={state.familyMembers.length > 0 ? dependencySaldo : null}
               />
             ) : (
               <PersonCostRow
@@ -146,9 +151,9 @@ export function Step7Summary() {
             )}
 
             {/* Member rows */}
-            {memberPrices.map(({ member, price, aporteMTPart, adicionalPart }: MemberPriceResult) =>
+            {memberPrices.map(({ member, price, aporteMTPart, adicionalPart, fullMemberPrice, saldoAplicado }: MemberPriceResult) =>
               isDependency ? (
-                <DependencyMemberRow key={member.id} member={member} price={price} />
+                <DependencyMemberRow key={member.id} member={member} price={price} fullMemberPrice={fullMemberPrice} saldoAplicado={saldoAplicado} />
               ) : (
                 <PersonCostRow
                   key={member.id}
@@ -297,17 +302,19 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-/** Row for dependency holder — shows plan price, employer discount, and diferencia */
+/** Row for dependency holder — shows plan price, employer discount, diferencia, and saldo a favor */
 function DependencyHolderRow({
   holderAge,
   planPrice,
   capacity,
   diferencia,
+  saldoAFavor,
 }: {
   holderAge: number;
   planPrice: number | null;
   capacity: number | null;
   diferencia: number | null;
+  saldoAFavor?: number | null;
 }) {
   return (
     <div className="flex items-start justify-between gap-2 py-2 border-b border-gray-100">
@@ -319,6 +326,9 @@ function DependencyHolderRow({
         )}
         {capacity != null && (
           <p className="text-xs text-gray-400">Descuento empleador: {formatCurrency(capacity)}</p>
+        )}
+        {saldoAFavor != null && saldoAFavor > 0 && (
+          <p className="text-xs text-emerald-600 font-medium">Saldo a favor: {formatCurrency(saldoAFavor)}</p>
         )}
       </div>
       <div className="text-right flex-shrink-0">
@@ -342,8 +352,18 @@ function DependencyHolderRow({
   );
 }
 
-/** Row for dependency family member — shows cost when table is populated, TODO otherwise */
-function DependencyMemberRow({ member, price }: { member: MemberPriceResult["member"]; price: number | null }) {
+/** Row for dependency family member — shows plan price, saldo applied, and effective cost */
+function DependencyMemberRow({
+  member,
+  price,
+  fullMemberPrice,
+  saldoAplicado,
+}: {
+  member: MemberPriceResult["member"];
+  price: number | null;
+  fullMemberPrice?: number | null;
+  saldoAplicado?: number | null;
+}) {
   return (
     <div className="flex items-start justify-between gap-2 py-2 border-b border-gray-100 last:border-0">
       <div className="min-w-0">
@@ -351,13 +371,18 @@ function DependencyMemberRow({ member, price }: { member: MemberPriceResult["mem
           {member.name || getFamilyMemberLabel(member.type)}
         </p>
         <p className="text-xs text-gray-500">{member.age} años · {getFamilyMemberLabel(member.type)}</p>
-        <p className="text-xs text-amber-600 mt-0.5">Genera costo adicional</p>
+        {fullMemberPrice != null && (
+          <p className="text-xs text-gray-400 mt-0.5">Precio plan: {formatCurrency(fullMemberPrice)}</p>
+        )}
+        {saldoAplicado != null && saldoAplicado > 0 && (
+          <p className="text-xs text-emerald-600">Saldo a favor: −{formatCurrency(saldoAplicado)}</p>
+        )}
       </div>
       <div className="text-right flex-shrink-0">
         {price != null ? (
           <span className="text-sm font-bold text-gray-900">{formatCurrency(price)}</span>
         ) : (
-          <span className="text-xs text-amber-600 italic">Tabla pendiente</span>
+          <span className="text-xs text-gray-400 italic">Sin sueldo ingresado</span>
         )}
       </div>
     </div>

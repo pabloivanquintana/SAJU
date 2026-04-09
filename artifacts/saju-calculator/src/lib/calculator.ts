@@ -107,29 +107,43 @@ export function getMonotributoAdicional(
 // ─── DEPENDENCY FAMILY MEMBER ─────────────────────────────────────────────────
 
 /**
- * Returns the additional cost a FAMILY MEMBER pays under relación de dependencia.
- *
- * The holder accesses the plan via capacity threshold (no monetary charge for them),
- * but each additional dependent DOES generate a cost.
- *
- * TODO: Populate "dependency_family_pricing" in saju-config.json with the actual
- * per-member cost table (same shape as pricing.relacion_dependencia but representing
- * a real cost, not a threshold). Then uncomment the lookup below.
- *
- * Format expected in JSON:
- *   "dependency_family_pricing": {
- *     "SAJU1100": { "0-17": XXXX, "18-35": XXXX, ... },
- *     ...
- *   }
+ * Returns the full plan price for a family member under relación de dependencia.
+ * Uses the same relacion_dependencia table, keyed by the member's age range.
+ * The effective price the member pays may be reduced by the holder's saldo a favor.
  */
 export function getDependencyMemberPrice(planId: PlanId, age: number): number | null {
   const ageRange = getAgeRange(age);
   if (!ageRange) return null;
-  // TODO: uncomment once dependency_family_pricing is defined in saju-config.json
-  // const pricing = (config as Record<string, unknown>).dependency_family_pricing as
-  //   Record<string, Record<string, number>> | undefined;
-  // return pricing?.[planId]?.[ageRange] ?? null;
-  return null; // pending data definition
+  const pricing = config.pricing as Record<string, Record<string, Record<string, number>>>;
+  return pricing.relacion_dependencia?.[planId]?.[ageRange] ?? null;
+}
+
+/**
+ * Returns the saldo a favor: how much of the employer contribution exceeds the holder's plan price.
+ * saldoAFavor = max(0, capacity - planPrice)
+ * This surplus can offset the cost of family members.
+ */
+export function getDependencySaldoAFavor(salary: number, planId: PlanId, holderAge: number): number {
+  const planPrice = getDependencyPlanPrice(planId, holderAge);
+  if (planPrice == null) return 0;
+  const cap = calculateCapacity(salary);
+  return Math.max(0, cap - planPrice);
+}
+
+/**
+ * Returns the effective price a family member pays after applying the holder's saldo a favor.
+ * effectivePrice = max(0, memberFullPrice - saldoAFavor)
+ */
+export function getDependencyMemberEffectivePrice(
+  salary: number,
+  planId: PlanId,
+  holderAge: number,
+  memberAge: number
+): number | null {
+  const fullPrice = getDependencyMemberPrice(planId, memberAge);
+  if (fullPrice == null) return null;
+  const saldo = getDependencySaldoAFavor(salary, planId, holderAge);
+  return Math.max(0, fullPrice - saldo);
 }
 
 // ─── PREPAID ──────────────────────────────────────────────────────────────────
@@ -239,9 +253,11 @@ export function suggestPlan(
 
 export interface MemberPriceResult {
   member: FamilyMember;
-  price: number | null;       // total the member pays
+  price: number | null;        // effective price the member pays
   aporteMTPart: number | null; // for monotributo: the aporte_mt component
   adicionalPart: number | null; // for monotributo: the adicional component
+  fullMemberPrice?: number | null;  // for dependency: raw plan price before saldo
+  saldoAplicado?: number | null;    // for dependency: saldo a favor used to reduce price
 }
 
 export interface TotalResult {
@@ -285,6 +301,16 @@ export function calculateTotal(
         ? aporteMTPart + adicionalPart
         : null;
       return { member, price, aporteMTPart, adicionalPart };
+    }
+    if (clientType === "dependency") {
+      const fullMemberPrice = getDependencyMemberPrice(planId, member.age);
+      if (salary != null && fullMemberPrice != null) {
+        const saldo = getDependencySaldoAFavor(salary, planId, holderAge);
+        const saldoAplicado = Math.min(saldo, fullMemberPrice);
+        const price = Math.max(0, fullMemberPrice - saldo);
+        return { member, price, aporteMTPart: null, adicionalPart: null, fullMemberPrice, saldoAplicado };
+      }
+      return { member, price: null, aporteMTPart: null, adicionalPart: null, fullMemberPrice, saldoAplicado: null };
     }
     const price = getMemberPrice(clientType, member.age, planId, category);
     return { member, price, aporteMTPart: null, adicionalPart: null };
