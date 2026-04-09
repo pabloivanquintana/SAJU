@@ -31,8 +31,8 @@ export function Step2Age() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-gray-900">¿Cuántos años tiene el titular?</h2>
-        <p className="text-sm text-gray-500 mt-1">Cobertura disponible hasta 55 años</p>
+        <h2 className="step-heading">¿Cuántos años tiene el titular?</h2>
+        <p className="step-subheading">Cobertura disponible hasta 55 años</p>
       </div>
 
       <div className="space-y-3">
@@ -49,16 +49,18 @@ export function Step2Age() {
             onKeyDown={(e) => e.key === "Enter" && handleContinue()}
             placeholder="Ej: 38"
             className={cn(
-              "w-full text-4xl font-bold text-center py-5 rounded-xl border-2 outline-none transition-all",
-              "placeholder:text-gray-300 text-gray-900",
-              error ? "border-red-400 bg-red-50" : "border-gray-200 bg-gray-50 focus:border-blue-400 focus:bg-white"
+              "w-full text-5xl font-bold text-center py-6 rounded-2xl border-2 outline-none transition-all",
+              "placeholder:text-slate-200 text-slate-800",
+              error
+                ? "border-red-400 bg-red-50"
+                : "border-slate-200 bg-slate-50 focus:border-sky-400 focus:bg-white focus:shadow-sm focus:shadow-sky-100"
             )}
             autoFocus
           />
         </div>
 
         {error && (
-          <div className="flex items-center gap-2 text-red-600 text-sm">
+          <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 border border-red-100 rounded-xl px-3 py-2.5">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{error}</span>
           </div>
@@ -66,14 +68,14 @@ export function Step2Age() {
 
         {ageRange && !error && (
           <div className="flex items-center justify-center">
-            <span className="text-xs bg-blue-100 text-blue-700 font-medium px-3 py-1.5 rounded-full">
-              Rango de edad: {ageRange}
+            <span className="text-xs bg-sky-100 text-sky-700 font-semibold px-4 py-1.5 rounded-full border border-sky-200">
+              Rango de cobertura: {ageRange} años
             </span>
           </div>
         )}
 
         {isOutOfRange && (
-          <div className="flex items-center gap-2 text-amber-600 text-sm bg-amber-50 p-3 rounded-lg">
+          <div className="flex items-center gap-2 text-amber-700 text-sm bg-amber-50 border border-amber-100 p-3 rounded-xl">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>Esta edad supera el rango de cobertura SAJU (máximo 55 años).</span>
           </div>
@@ -82,12 +84,12 @@ export function Step2Age() {
 
       <button
         onClick={handleContinue}
-        disabled={!inputValue || isNaN(parsedAge)}
+        disabled={!inputValue || isNaN(parsedAge) || !ageRange}
         className={cn(
           "w-full py-4 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all",
           inputValue && !isNaN(parsedAge) && ageRange
-            ? "bg-blue-600 hover:bg-blue-700 text-white shadow-sm shadow-blue-200"
-            : "bg-gray-100 text-gray-400 cursor-not-allowed"
+            ? "bg-sky-600 hover:bg-sky-700 text-white shadow-sm shadow-sky-200/60"
+            : "bg-slate-100 text-slate-400 cursor-not-allowed"
         )}
       >
         Continuar <ChevronRight className="w-4 h-4" />

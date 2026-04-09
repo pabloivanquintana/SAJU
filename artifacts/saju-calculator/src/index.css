@@ -73,35 +73,35 @@
   --elevate-1: rgba(0,0,0, .03);
   --elevate-2: rgba(0,0,0, .08);
 
-  --background: 210 20% 97%;
-  --foreground: 215 25% 15%;
-  --border: 214 20% 88%;
+  --background: 210 40% 98%;
+  --foreground: 215 30% 12%;
+  --border: 210 25% 90%;
   --card: 0 0% 100%;
-  --card-foreground: 215 25% 15%;
-  --card-border: 214 20% 90%;
-  --sidebar: 215 30% 96%;
-  --sidebar-foreground: 215 25% 15%;
-  --sidebar-border: 214 20% 88%;
-  --sidebar-primary: 221 83% 53%;
+  --card-foreground: 215 30% 12%;
+  --card-border: 210 25% 92%;
+  --sidebar: 210 40% 96%;
+  --sidebar-foreground: 215 30% 12%;
+  --sidebar-border: 210 25% 90%;
+  --sidebar-primary: 201 97% 36%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 221 83% 53%;
+  --sidebar-accent: 201 97% 36%;
   --sidebar-accent-foreground: 0 0% 100%;
-  --sidebar-ring: 221 83% 53%;
+  --sidebar-ring: 201 97% 36%;
   --popover: 0 0% 100%;
-  --popover-foreground: 215 25% 15%;
-  --popover-border: 214 20% 90%;
-  --primary: 221 83% 53%;
+  --popover-foreground: 215 30% 12%;
+  --popover-border: 210 25% 92%;
+  --primary: 201 97% 36%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 215 20% 95%;
-  --secondary-foreground: 215 25% 35%;
-  --muted: 214 20% 94%;
-  --muted-foreground: 215 15% 50%;
-  --accent: 221 83% 96%;
-  --accent-foreground: 221 83% 40%;
-  --destructive: 0 84% 60%;
+  --secondary: 210 30% 95%;
+  --secondary-foreground: 210 25% 35%;
+  --muted: 210 25% 94%;
+  --muted-foreground: 210 15% 50%;
+  --accent: 201 97% 95%;
+  --accent-foreground: 201 97% 30%;
+  --destructive: 0 84% 58%;
   --destructive-foreground: 0 0% 100%;
-  --input: 214 20% 88%;
-  --ring: 221 83% 53%;
+  --input: 210 25% 88%;
+  --ring: 201 97% 36%;
   --chart-1: 221 83% 53%;
   --chart-2: 162 72% 45%;
   --chart-3: 37 90% 55%;
@@ -111,10 +111,10 @@
   --app-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --app-font-serif: Georgia, serif;
   --app-font-mono: Menlo, monospace;
-  --radius: 0.625rem;
-  --shadow-sm: 0 1px 3px 0 rgba(0,0,0,0.08), 0 1px 2px -1px rgba(0,0,0,0.06);
-  --shadow: 0 4px 6px -1px rgba(0,0,0,0.08), 0 2px 4px -2px rgba(0,0,0,0.06);
-  --shadow-md: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.06);
+  --radius: 0.75rem;
+  --shadow-sm: 0 1px 4px 0 rgba(2, 132, 199, 0.06), 0 1px 2px -1px rgba(0,0,0,0.05);
+  --shadow: 0 4px 12px -2px rgba(2, 132, 199, 0.08), 0 2px 6px -2px rgba(0,0,0,0.05);
+  --shadow-md: 0 10px 24px -4px rgba(2, 132, 199, 0.10), 0 4px 8px -4px rgba(0,0,0,0.05);
 
   --primary-border: hsl(var(--primary));
   --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
@@ -139,5 +139,30 @@
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .step-heading {
+    @apply text-2xl font-bold text-slate-800 tracking-tight;
+  }
+  .step-subheading {
+    @apply text-sm text-slate-500 mt-1.5 leading-relaxed;
+  }
+  .btn-primary {
+    @apply w-full py-4 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all;
+    @apply bg-sky-600 hover:bg-sky-700 text-white shadow-sm shadow-sky-200/60;
+  }
+  .btn-primary:disabled {
+    @apply bg-slate-100 text-slate-400 cursor-not-allowed shadow-none;
+  }
+  .card-surface {
+    @apply bg-white rounded-2xl border border-slate-100 shadow-md shadow-slate-200/40;
+  }
+  .info-box {
+    @apply bg-sky-50 border border-sky-100 rounded-xl p-4;
+  }
+  .info-box-amber {
+    @apply bg-amber-50 border border-amber-100 rounded-xl p-4;
   }
 }

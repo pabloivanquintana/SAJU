@@ -82,10 +82,10 @@ export function Step7Summary() {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-gray-900">Resumen del caso</h2>
+        <h2 className="step-heading">Resumen del caso</h2>
         <button
           onClick={resetAll}
-          className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 transition-colors px-2 py-1.5 rounded-lg hover:bg-gray-100"
+          className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-sky-600 transition-colors px-2 py-1.5 rounded-lg hover:bg-slate-100"
         >
           <RotateCcw className="w-3.5 h-3.5" />
           Nuevo caso
@@ -93,12 +93,12 @@ export function Step7Summary() {
       </div>
 
       {/* Plan + client info */}
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        <div className="bg-blue-600 px-4 py-3">
-          <p className="text-xs font-semibold text-blue-200 uppercase tracking-wider">Plan seleccionado</p>
-          <p className="text-lg font-bold text-white mt-0.5">{planId} — {plan?.name}</p>
+      <div className="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm">
+        <div className="bg-gradient-to-r from-sky-700 to-sky-600 px-5 py-4">
+          <p className="text-xs font-bold text-sky-200 uppercase tracking-widest">Plan seleccionado</p>
+          <p className="text-xl font-black text-white mt-1 tracking-tight">{planId} — {plan?.name}</p>
         </div>
-        <div className="p-4 space-y-3">
+        <div className="p-5 space-y-3">
           <SummaryRow label="Tipo de cliente" value={CLIENT_TYPE_LABELS[state.clientType]} />
           <SummaryRow label="Edad del titular" value={`${state.holderAge} años`} />
           {state.salary != null && (
@@ -116,21 +116,21 @@ export function Step7Summary() {
       </div>
 
       {/* Cost breakdown */}
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
-          <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Desglose de costos</p>
+      <div className="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm">
+        <div className="px-5 py-3 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Desglose de costos</p>
           {isDependency && (
-            <span className="text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded px-2 py-0.5">
+            <span className="text-xs text-sky-700 bg-sky-50 border border-sky-200 rounded-lg px-2.5 py-1 font-semibold">
               Relación de Dependencia
             </span>
           )}
           {isMonotributo && (
-            <span className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded px-2 py-0.5">
+            <span className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1 font-semibold">
               Titular: solo adicional
             </span>
           )}
         </div>
-        <div className="p-4">
+        <div className="p-5">
           <div className="space-y-3">
             {/* Holder row */}
             {isDependency ? (
@@ -169,11 +169,11 @@ export function Step7Summary() {
 
           {/* Total (only for non-dependency) */}
           {!isDependency && total != null && (
-            <div className="mt-4 bg-blue-600 rounded-xl px-4 py-4">
+            <div className="mt-4 bg-sky-600 rounded-xl px-5 py-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-semibold text-blue-200 uppercase tracking-wider">Total mensual</p>
-                  <p className="text-xs text-blue-200 mt-0.5">
+                  <p className="text-xs font-bold text-sky-200 uppercase tracking-widest">Total mensual</p>
+                  <p className="text-xs text-sky-200 mt-0.5">
                     {state.familyMembers.length > 0
                       ? `Titular + ${state.familyMembers.length} familiar${state.familyMembers.length > 1 ? "es" : ""}`
                       : "Solo titular"}
@@ -182,7 +182,7 @@ export function Step7Summary() {
                 <span className="text-3xl font-bold text-white">{formatCurrency(total)}</span>
               </div>
               {isMonotributo && (
-                <p className="text-xs text-blue-200 mt-2 pt-2 border-t border-blue-500">
+                <p className="text-xs text-sky-200 mt-2 pt-2 border-t border-sky-500">
                   Titular: adicional · Integrantes: aporte AFIP + adicional
                 </p>
               )}
@@ -191,11 +191,11 @@ export function Step7Summary() {
 
           {/* Dependency: total mensual */}
           {isDependency && total != null && (
-            <div className="mt-4 bg-blue-600 rounded-xl px-4 py-4">
+            <div className="mt-4 bg-sky-600 rounded-xl px-5 py-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-semibold text-blue-200 uppercase tracking-wider">Total mensual</p>
-                  <p className="text-xs text-blue-200 mt-0.5">
+                  <p className="text-xs font-bold text-sky-200 uppercase tracking-widest">Total mensual</p>
+                  <p className="text-xs text-sky-200 mt-0.5">
                     {state.familyMembers.length > 0
                       ? `Titular + ${state.familyMembers.length} familiar${state.familyMembers.length > 1 ? "es" : ""}`
                       : "Solo titular"}
@@ -206,10 +206,10 @@ export function Step7Summary() {
             </div>
           )}
           {isDependency && total == null && (
-            <div className="mt-4 rounded-xl overflow-hidden border border-blue-200">
-              <div className="bg-blue-50 px-4 py-3 space-y-1.5">
-                <p className="text-xs font-semibold text-blue-800">Relación de Dependencia</p>
-                <p className="text-xs text-blue-700">
+            <div className="mt-4 rounded-xl overflow-hidden border border-sky-100">
+              <div className="bg-sky-50 px-4 py-3.5 space-y-1.5">
+                <p className="text-xs font-semibold text-sky-800">Relación de Dependencia</p>
+                <p className="text-xs text-sky-700">
                   Ingresá el sueldo bruto para calcular la diferencia que paga el empleado.
                 </p>
               </div>
@@ -247,19 +247,19 @@ export function Step7Summary() {
       </div>
 
       {/* Next steps */}
-      <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
+      <div className="border border-slate-100 rounded-2xl overflow-hidden bg-white shadow-sm">
         <button
           onClick={() => setShowNextSteps((v) => !v)}
-          className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+          className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-slate-50 transition-colors"
         >
           <span className="font-semibold text-sm text-gray-800">Próximos pasos del proceso</span>
           {showNextSteps ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
         </button>
         {showNextSteps && (
-          <div className="px-4 pb-4 space-y-3 border-t border-gray-100">
+          <div className="px-5 pb-5 space-y-3 border-t border-slate-100">
             {nextSteps?.map((step) => (
               <div key={step.step} className="flex gap-3 pt-3">
-                <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex items-center justify-center flex-shrink-0">
+                <div className="w-6 h-6 rounded-full bg-sky-100 text-sky-700 text-xs font-bold flex items-center justify-center flex-shrink-0">
                   {step.step}
                 </div>
                 <div>
@@ -273,16 +273,16 @@ export function Step7Summary() {
       </div>
 
       {/* FAQ */}
-      <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
+      <div className="border border-slate-100 rounded-2xl overflow-hidden bg-white shadow-sm">
         <button
           onClick={() => setShowFaq((v) => !v)}
-          className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+          className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-slate-50 transition-colors"
         >
           <span className="font-semibold text-sm text-gray-800">Preguntas frecuentes</span>
           {showFaq ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
         </button>
         {showFaq && (
-          <div className="divide-y divide-gray-100 border-t border-gray-100">
+          <div className="divide-y divide-slate-100 border-t border-slate-100">
             {faq.map((item) => (
               <FaqItem key={item.id} question={item.question} answer={item.answer} />
             ))}
@@ -296,8 +296,8 @@ export function Step7Summary() {
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between items-center text-sm">
-      <span className="text-gray-500">{label}</span>
-      <span className="font-semibold text-gray-800">{value}</span>
+      <span className="text-slate-500">{label}</span>
+      <span className="font-semibold text-slate-800">{value}</span>
     </div>
   );
 }
@@ -457,8 +457,8 @@ function DocSection({
 }) {
   const statusInfo = STATUS_ICONS[statusKey];
   const Icon = statusInfo.icon;
-  const bgColor = variant === "success" ? "bg-emerald-50 border-emerald-100" : variant === "warning" ? "bg-amber-50 border-amber-100" : "bg-red-50 border-red-100";
-  const titleColor = variant === "success" ? "text-emerald-700" : variant === "warning" ? "text-amber-700" : "text-red-700";
+  const bgColor = variant === "success" ? "bg-emerald-50 border-emerald-100" : variant === "warning" ? "bg-amber-50 border-amber-100" : "bg-red-50/70 border-red-100";
+  const titleColor = variant === "success" ? "text-emerald-700" : variant === "warning" ? "text-amber-700" : "text-red-600";
 
   return (
     <div className={cn("border rounded-xl p-4 space-y-2", bgColor)}>
@@ -487,16 +487,18 @@ function DocSection({
 function FaqItem({ question, answer }: { question: string; answer: string }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="px-4 py-3">
+    <div className="px-5 py-3.5">
       <button
         className="w-full flex items-start justify-between gap-2 text-left"
         onClick={() => setOpen((v) => !v)}
       >
-        <span className="text-sm font-semibold text-gray-800">{question}</span>
-        {open ? <ChevronUp className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" /> : <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />}
+        <span className="text-sm font-semibold text-slate-800">{question}</span>
+        {open ? <ChevronUp className="w-4 h-4 text-slate-400 flex-shrink-0 mt-0.5" /> : <ChevronDown className="w-4 h-4 text-slate-400 flex-shrink-0 mt-0.5" />}
       </button>
       {open && (
-        <p className="text-xs text-gray-600 mt-2 leading-relaxed">{answer}</p>
+        <div className="mt-2.5 bg-sky-50 border border-sky-100 rounded-xl p-3.5">
+          <p className="text-xs text-slate-700 leading-relaxed">{answer}</p>
+        </div>
       )}
     </div>
   );

@@ -44,10 +44,10 @@ export function Step3EconomicData() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-gray-900">
+        <h2 className="step-heading">
           {state.clientType === "dependency" ? "¿Cuál es el sueldo bruto mensual?" : "¿Cuál es la categoría AFIP?"}
         </h2>
-        <p className="text-sm text-gray-500 mt-1">
+        <p className="step-subheading">
           {state.clientType === "dependency"
             ? "Se usa para calcular la capacidad de pago estimada"
             : "La categoría determina el precio del plan"}
@@ -57,7 +57,7 @@ export function Step3EconomicData() {
       {state.clientType === "dependency" && (
         <div className="space-y-4">
           <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-gray-400">$</span>
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-slate-300">$</span>
             <input
               type="text"
               inputMode="numeric"
@@ -65,20 +65,20 @@ export function Step3EconomicData() {
               onChange={(e) => setSalaryInput(e.target.value.replace(/[^0-9,.]/g, ""))}
               onKeyDown={(e) => e.key === "Enter" && handleContinue()}
               placeholder="0"
-              className="w-full text-3xl font-bold pl-10 pr-4 py-5 rounded-xl border-2 border-gray-200 bg-gray-50 focus:border-blue-400 focus:bg-white outline-none transition-all text-right text-gray-900 placeholder:text-gray-300"
+              className="w-full text-3xl font-bold pl-10 pr-4 py-5 rounded-2xl border-2 border-slate-200 bg-slate-50 focus:border-sky-400 focus:bg-white focus:shadow-sm focus:shadow-sky-100 outline-none transition-all text-right text-slate-800 placeholder:text-slate-200"
               autoFocus
             />
           </div>
 
           {capacity != null && (
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2">
-              <div className="flex items-center gap-2 text-blue-700">
+            <div className="bg-sky-50 border border-sky-100 rounded-xl p-4 space-y-2">
+              <div className="flex items-center gap-2 text-sky-700">
                 <Info className="w-4 h-4 flex-shrink-0" />
                 <span className="text-sm font-semibold">Capacidad de pago estimada</span>
               </div>
-              <div className="text-2xl font-bold text-blue-800">{formatCurrency(capacity)}/mes</div>
-              <p className="text-xs text-blue-600">
-                Fórmula: ${formatCurrency(salary)} × 3% × 3 = {formatCurrency(capacity)}
+              <div className="text-2xl font-bold text-sky-800">{formatCurrency(capacity)}<span className="text-sm font-medium text-sky-500 ml-1">/mes</span></div>
+              <p className="text-xs text-sky-600">
+                {formatCurrency(salary)} × 3% × 3 = {formatCurrency(capacity)}
               </p>
             </div>
           )}
@@ -86,18 +86,18 @@ export function Step3EconomicData() {
       )}
 
       {state.clientType === "monotributo" && (
-        <div className="space-y-3">
-          <p className="text-xs text-gray-500">Categoría AFIP del monotributista:</p>
+        <div className="space-y-4">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Categoría AFIP del monotributista</p>
           <div className="grid grid-cols-4 gap-2">
             {CATEGORIES.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
                 className={cn(
-                  "py-3 rounded-xl border-2 font-bold text-lg transition-all",
+                  "py-3.5 rounded-xl border-2 font-bold text-lg transition-all",
                   selectedCategory === cat
-                    ? "border-blue-500 bg-blue-500 text-white shadow-sm"
-                    : "border-gray-200 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50"
+                    ? "border-sky-500 bg-sky-600 text-white shadow-sm shadow-sky-200"
+                    : "border-slate-200 bg-white text-slate-700 hover:border-sky-300 hover:bg-sky-50"
                 )}
               >
                 {cat}
@@ -105,8 +105,8 @@ export function Step3EconomicData() {
             ))}
           </div>
           {selectedCategory && (
-            <div className="flex items-center gap-2 text-blue-700 bg-blue-50 rounded-lg p-3 text-sm">
-              <Info className="w-4 h-4 flex-shrink-0" />
+            <div className="flex items-start gap-2 text-sky-700 bg-sky-50 border border-sky-100 rounded-xl p-3.5 text-sm">
+              <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
               <span>Categoría <strong>{selectedCategory}</strong> seleccionada. El precio se calculará según esta categoría y la edad del titular.</span>
             </div>
           )}
@@ -119,8 +119,8 @@ export function Step3EconomicData() {
         className={cn(
           "w-full py-4 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all",
           canContinue
-            ? "bg-blue-600 hover:bg-blue-700 text-white shadow-sm shadow-blue-200"
-            : "bg-gray-100 text-gray-400 cursor-not-allowed"
+            ? "bg-sky-600 hover:bg-sky-700 text-white shadow-sm shadow-sky-200/60"
+            : "bg-slate-100 text-slate-400 cursor-not-allowed"
         )}
       >
         Continuar <ChevronRight className="w-4 h-4" />

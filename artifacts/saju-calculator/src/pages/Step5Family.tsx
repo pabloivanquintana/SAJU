@@ -15,9 +15,9 @@ import { Plus, Trash2, Users, ChevronRight, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const MEMBER_TYPES: { type: FamilyMemberType; label: string; color: string }[] = [
-  { type: "spouse", label: "Cónyuge", color: "bg-pink-100 text-pink-700" },
-  { type: "concubine", label: "Concubino/a", color: "bg-purple-100 text-purple-700" },
-  { type: "child", label: "Hijo/a", color: "bg-amber-100 text-amber-700" },
+  { type: "spouse",    label: "Cónyuge",    color: "bg-rose-100 text-rose-700" },
+  { type: "concubine", label: "Concubino/a", color: "bg-violet-100 text-violet-700" },
+  { type: "child",     label: "Hijo/a",      color: "bg-amber-100 text-amber-700" },
 ];
 
 export function Step5Family() {
@@ -69,22 +69,21 @@ export function Step5Family() {
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-xl font-bold text-gray-900">¿Agregamos familiares?</h2>
-        <p className="text-sm text-gray-500 mt-1">Cónyuge, concubino/a, hijos hasta 21 años (estudiantes hasta 25)</p>
+        <h2 className="step-heading">¿Agregamos familiares?</h2>
+        <p className="step-subheading">Cónyuge, concubino/a, hijos hasta 21 años (estudiantes hasta 25)</p>
       </div>
 
       {state.familyMembers.length === 0 && !showForm && (
-        <div className="flex flex-col items-center justify-center py-8 text-center border-2 border-dashed border-gray-200 rounded-xl bg-gray-50">
-          <Users className="w-10 h-10 text-gray-300 mb-3" />
-          <p className="text-sm text-gray-500 font-medium">Sin familiares por ahora</p>
-          <p className="text-xs text-gray-400 mt-1">El titular puede agregar cobertura para su grupo familiar</p>
+        <div className="flex flex-col items-center justify-center py-10 text-center border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50">
+          <Users className="w-10 h-10 text-slate-300 mb-3" />
+          <p className="text-sm text-slate-500 font-medium">Sin familiares por ahora</p>
+          <p className="text-xs text-slate-400 mt-1">El titular puede agregar cobertura para su grupo familiar</p>
         </div>
       )}
 
       {state.familyMembers.map((member) => {
         const plan = state.selectedPlan as PlanId;
 
-        // For monotributo: show aporte_mt + adicional breakdown
         const memberAporteMT = isMonotributo && state.monotributoCategory
           ? getAporteMT(state.monotributoCategory)
           : null;
@@ -105,50 +104,49 @@ export function Step5Family() {
 
         const typeInfo = MEMBER_TYPES.find((m) => m.type === member.type);
         return (
-          <div key={member.id} className="p-3 bg-white border border-gray-200 rounded-xl">
+          <div key={member.id} className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm">
             <div className="flex items-center gap-3">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-semibold text-sm text-gray-800">{member.name}</span>
-                  <span className={cn("text-xs font-medium px-2 py-0.5 rounded-full", typeInfo?.color)}>
+                  <span className="font-semibold text-sm text-slate-800">{member.name}</span>
+                  <span className={cn("text-xs font-semibold px-2 py-0.5 rounded-full", typeInfo?.color)}>
                     {getFamilyMemberLabel(member.type)}
                   </span>
                   {member.isStudent && (
-                    <span className="text-xs bg-blue-100 text-blue-700 font-medium px-2 py-0.5 rounded-full">Estudiante</span>
+                    <span className="text-xs bg-sky-100 text-sky-700 font-semibold px-2 py-0.5 rounded-full">Estudiante</span>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 mt-0.5">{member.age} años</p>
+                <p className="text-xs text-slate-400 mt-0.5">{member.age} años</p>
               </div>
               {!isDependency && memberPrice != null && (
                 <div className="text-right flex-shrink-0">
-                  <div className="text-sm font-bold text-gray-800">{formatCurrency(memberPrice)}</div>
-                  <div className="text-xs text-gray-400">/mes</div>
+                  <div className="text-sm font-bold text-slate-800">{formatCurrency(memberPrice)}</div>
+                  <div className="text-xs text-slate-400">/mes</div>
                 </div>
               )}
               {isDependency && (
                 <div className="text-right flex-shrink-0">
                   {dependencyResult?.price != null ? (
                     <>
-                      <div className="text-sm font-bold text-gray-800">{formatCurrency(dependencyResult.price)}</div>
-                      <div className="text-xs text-gray-400">/mes</div>
+                      <div className="text-sm font-bold text-slate-800">{formatCurrency(dependencyResult.price)}</div>
+                      <div className="text-xs text-slate-400">/mes</div>
                     </>
                   ) : (
-                    <span className="text-xs text-gray-400 italic">Sin sueldo</span>
+                    <span className="text-xs text-slate-400 italic">Sin sueldo</span>
                   )}
                 </div>
               )}
               <button
                 onClick={() => removeFamilyMember(member.id)}
-                className="p-2 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                className="p-2 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Monotributo member: show aporte_mt + adicional breakdown */}
             {isMonotributo && memberAporteMT != null && memberAdicional != null && (
-              <div className="mt-2 pt-2 border-t border-gray-100 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
-                <span>Aporte AFIP: <strong className="text-gray-700">{formatCurrency(memberAporteMT)}</strong></span>
+              <div className="mt-2.5 pt-2.5 border-t border-slate-100 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+                <span>Aporte AFIP: <strong className="text-slate-700">{formatCurrency(memberAporteMT)}</strong></span>
                 <span>Adicional: <strong className="text-amber-700">{formatCurrency(memberAdicional)}</strong></span>
               </div>
             )}
@@ -158,42 +156,35 @@ export function Step5Family() {
 
       {/* Running total when family members are present */}
       {totals && state.familyMembers.length > 0 && (
-        <div className="bg-blue-600 rounded-xl p-4 text-white">
-          <p className="text-xs font-semibold text-blue-200 uppercase tracking-wider mb-3">Costo estimado del grupo</p>
-          <div className="space-y-1.5 mb-3">
+        <div className="bg-sky-600 rounded-2xl p-5 text-white shadow-md shadow-sky-200/40">
+          <p className="text-xs font-bold text-sky-200 uppercase tracking-widest mb-3">Costo estimado del grupo</p>
+          <div className="space-y-2 mb-3">
 
-            {/* Holder row */}
             <div className="flex justify-between text-sm">
-              <span className="text-blue-100">Titular ({state.holderAge} años)</span>
+              <span className="text-sky-100">Titular ({state.holderAge} años)</span>
               <span className="font-semibold">
                 {totals.holderPrice != null
-                  ? formatCurrency(totals.holderPrice)
+                  ? (totals.holderPrice === 0 ? "Cubierto" : formatCurrency(totals.holderPrice))
                   : isDependency ? "Accede por aporte" : "—"}
               </span>
             </div>
-            {isMonotributo && totals.holderPrice != null && (
-              <div className="text-right">
-                <span className="text-xs text-blue-300">solo adicional</span>
-              </div>
-            )}
             {isDependency && (
               <div className="text-right">
-                <span className="text-xs text-blue-300">el titular no genera costo extra</span>
+                <span className="text-xs text-sky-300">el titular no genera costo extra</span>
               </div>
             )}
 
-            {/* Family member rows */}
             {totals.memberPrices.map(({ member, price, aporteMTPart, adicionalPart, fullMemberPrice, saldoAplicado }: MemberPriceResult) => (
               <div key={member.id}>
                 <div className="flex justify-between text-sm">
-                  <span className="text-blue-100">{member.name} ({member.age} años)</span>
+                  <span className="text-sky-100">{member.name} ({member.age} años)</span>
                   <span className="font-semibold">
                     {price != null ? formatCurrency(price) : "—"}
                   </span>
                 </div>
                 {isMonotributo && aporteMTPart != null && adicionalPart != null && (
                   <div className="text-right">
-                    <span className="text-xs text-blue-300">
+                    <span className="text-xs text-sky-300">
                       aporte {formatCurrency(aporteMTPart)} + adicional {formatCurrency(adicionalPart)}
                     </span>
                   </div>
@@ -201,11 +192,11 @@ export function Step5Family() {
                 {isDependency && fullMemberPrice != null && (
                   <div className="text-right">
                     {saldoAplicado != null && saldoAplicado > 0 ? (
-                      <span className="text-xs text-blue-300">
+                      <span className="text-xs text-sky-300">
                         plan {formatCurrency(fullMemberPrice)} − saldo {formatCurrency(saldoAplicado)}
                       </span>
                     ) : (
-                      <span className="text-xs text-blue-300">precio según edad</span>
+                      <span className="text-xs text-sky-300">precio según edad</span>
                     )}
                   </div>
                 )}
@@ -214,53 +205,53 @@ export function Step5Family() {
           </div>
 
           {totals.total != null && (
-            <div className="border-t border-blue-500 pt-3 flex justify-between items-center">
-              <span className="font-bold">TOTAL MENSUAL</span>
-              <span className="text-2xl font-bold">{formatCurrency(totals.total)}</span>
+            <div className="border-t border-sky-500 pt-3 flex justify-between items-center">
+              <span className="font-bold text-sm">TOTAL MENSUAL</span>
+              <span className="text-2xl font-black">{formatCurrency(totals.total)}</span>
             </div>
           )}
           {isDependency && totals.total == null && (
-            <p className="text-xs text-blue-300 mt-2 pt-2 border-t border-blue-500">
+            <p className="text-xs text-sky-300 mt-2 pt-2 border-t border-sky-500">
               Ingresá el sueldo bruto para calcular el costo del grupo familiar
             </p>
           )}
           {isMonotributo && (
-            <p className="text-xs text-blue-300 mt-1 text-right">Titular paga adicional · Integrantes pagan aporte + adicional</p>
+            <p className="text-xs text-sky-200 mt-1 text-right">Titular paga adicional · Integrantes pagan aporte + adicional</p>
           )}
         </div>
       )}
 
-      {/* Titular-only cost when no family members (non-dependency) */}
+      {/* Titular-only cost when no family members */}
       {totals && state.familyMembers.length === 0 && totals.holderPrice != null && (
-        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 flex justify-between items-center">
+        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex justify-between items-center">
           <div>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-slate-500">
               {isMonotributo ? "Adicional a pagar (titular)" : "Costo titular"}
             </p>
-            <p className="text-sm font-semibold text-gray-700">Plan {state.selectedPlan}</p>
+            <p className="text-sm font-semibold text-slate-700">Plan {state.selectedPlan}</p>
           </div>
           <div className="text-right">
-            <p className="text-lg font-bold text-gray-900">{formatCurrency(totals.holderPrice)}</p>
-            <p className="text-xs text-gray-400">/mes</p>
+            <p className="text-xl font-bold text-slate-800">{formatCurrency(totals.holderPrice)}</p>
+            <p className="text-xs text-slate-400">/mes</p>
           </div>
         </div>
       )}
 
       {showForm && (
-        <div className="border-2 border-blue-200 bg-blue-50/50 rounded-xl p-4 space-y-4">
-          <h3 className="font-semibold text-sm text-gray-800">Nuevo familiar</h3>
+        <div className="border-2 border-sky-100 bg-sky-50/60 rounded-2xl p-5 space-y-4">
+          <h3 className="font-bold text-sm text-slate-800">Nuevo familiar</h3>
           <div>
-            <label className="text-xs font-medium text-gray-600 mb-1.5 block">Tipo de vínculo</label>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Tipo de vínculo</label>
             <div className="grid grid-cols-3 gap-2">
               {MEMBER_TYPES.map(({ type, label }) => (
                 <button
                   key={type}
                   onClick={() => { setNewType(type); setIsStudent(false); }}
                   className={cn(
-                    "py-2 text-xs font-semibold rounded-lg border-2 transition-all",
+                    "py-2.5 text-xs font-semibold rounded-xl border-2 transition-all",
                     newType === type
-                      ? "border-blue-500 bg-blue-500 text-white"
-                      : "border-gray-200 bg-white text-gray-700 hover:border-blue-300"
+                      ? "border-sky-500 bg-sky-600 text-white shadow-sm shadow-sky-200"
+                      : "border-slate-200 bg-white text-slate-700 hover:border-sky-300 hover:bg-sky-50"
                   )}
                 >
                   {label}
@@ -270,17 +261,17 @@ export function Step5Family() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-gray-600 mb-1.5 block">Nombre (opcional)</label>
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Nombre (opcional)</label>
               <input
                 type="text"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder={getFamilyMemberLabel(newType)}
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white outline-none focus:border-blue-400 transition-all"
+                className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white outline-none focus:border-sky-400 focus:shadow-sm focus:shadow-sky-100 transition-all"
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600 mb-1.5 block">Edad</label>
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Edad</label>
               <input
                 type="number"
                 value={newAge}
@@ -288,7 +279,7 @@ export function Step5Family() {
                 placeholder="0"
                 min={0}
                 max={120}
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white outline-none focus:border-blue-400 transition-all"
+                className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white outline-none focus:border-sky-400 focus:shadow-sm focus:shadow-sky-100 transition-all"
               />
             </div>
           </div>
@@ -299,14 +290,14 @@ export function Step5Family() {
                 type="checkbox"
                 checked={isStudent}
                 onChange={(e) => setIsStudent(e.target.checked)}
-                className="w-4 h-4 accent-blue-600"
+                className="w-4 h-4 accent-sky-600"
               />
-              <span className="text-xs text-gray-700">Es estudiante (entre 21 y 25 años)</span>
+              <span className="text-xs text-slate-700">Es estudiante (entre 21 y 25 años)</span>
             </label>
           )}
 
           {formError && (
-            <div className="flex items-center gap-2 text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2.5 text-xs">
+            <div className="flex items-center gap-2 text-amber-700 bg-amber-50 border border-amber-100 rounded-xl p-3 text-xs">
               <AlertTriangle className="w-4 h-4 flex-shrink-0" />
               {formError}
             </div>
@@ -315,13 +306,13 @@ export function Step5Family() {
           <div className="flex gap-2">
             <button
               onClick={handleAdd}
-              className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors"
+              className="flex-1 py-3 bg-sky-600 hover:bg-sky-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm shadow-sky-200"
             >
               Agregar
             </button>
             <button
               onClick={() => { setShowForm(false); setFormError(null); }}
-              className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-lg transition-colors"
+              className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-xl transition-colors"
             >
               Cancelar
             </button>
@@ -332,7 +323,7 @@ export function Step5Family() {
       {!showForm && (
         <button
           onClick={() => setShowForm(true)}
-          className="w-full py-3 border-2 border-dashed border-blue-200 rounded-xl text-blue-600 font-semibold text-sm hover:border-blue-400 hover:bg-blue-50 transition-all flex items-center justify-center gap-2"
+          className="w-full py-3.5 border-2 border-dashed border-sky-200 rounded-xl text-sky-600 font-semibold text-sm hover:border-sky-400 hover:bg-sky-50 transition-all flex items-center justify-center gap-2"
         >
           <Plus className="w-4 h-4" /> Agregar familiar
         </button>
@@ -340,7 +331,7 @@ export function Step5Family() {
 
       <button
         onClick={() => setStep(6)}
-        className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all shadow-sm shadow-blue-200"
+        className="w-full py-4 bg-sky-600 hover:bg-sky-700 text-white rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all shadow-sm shadow-sky-200/60"
       >
         Continuar a Documentación <ChevronRight className="w-4 h-4" />
       </button>

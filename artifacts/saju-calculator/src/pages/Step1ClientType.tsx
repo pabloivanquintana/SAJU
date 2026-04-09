@@ -34,10 +34,10 @@ export function Step1ClientType() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="mb-6">
-        <h2 className="text-xl font-bold text-gray-900">¿Qué tipo de cliente?</h2>
-        <p className="text-sm text-gray-500 mt-1">Seleccioná la categoría que corresponde al cliente</p>
+    <div className="space-y-5">
+      <div className="mb-2">
+        <h2 className="step-heading">¿Qué tipo de cliente?</h2>
+        <p className="step-subheading">Seleccioná la categoría que corresponde al cliente</p>
       </div>
 
       <div className="space-y-3">
@@ -48,38 +48,41 @@ export function Step1ClientType() {
               key={type}
               onClick={() => handleSelect(type)}
               className={cn(
-                "w-full flex items-start gap-4 p-4 rounded-xl border-2 text-left transition-all duration-200",
+                "w-full flex items-start gap-4 p-5 rounded-xl border-2 text-left transition-all duration-200",
                 selected
-                  ? "border-blue-500 bg-blue-50 shadow-sm"
-                  : "border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50/30"
+                  ? "border-sky-500 bg-sky-50/80 shadow-sm shadow-sky-100"
+                  : "border-slate-200 bg-white hover:border-sky-200 hover:bg-sky-50/30"
               )}
             >
               <div
                 className={cn(
-                  "p-2.5 rounded-lg flex-shrink-0",
-                  selected ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-500"
+                  "p-2.5 rounded-xl flex-shrink-0 transition-colors",
+                  selected ? "bg-sky-600 text-white shadow-sm shadow-sky-200" : "bg-slate-100 text-slate-500"
                 )}
               >
                 <Icon className="w-5 h-5" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className={cn("font-semibold text-sm", selected ? "text-blue-700" : "text-gray-800")}>
+                  <span className={cn("font-semibold text-sm", selected ? "text-sky-700" : "text-slate-800")}>
                     {title}
                   </span>
                   {tag && (
-                    <span className="text-xs bg-emerald-100 text-emerald-700 font-medium px-2 py-0.5 rounded-full">
+                    <span className="text-xs bg-emerald-100 text-emerald-700 font-semibold px-2 py-0.5 rounded-full">
                       {tag}
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{description}</p>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">{description}</p>
               </div>
-              {selected && (
-                <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <div className="w-2 h-2 rounded-full bg-white" />
-                </div>
-              )}
+              <div
+                className={cn(
+                  "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all",
+                  selected ? "border-sky-500 bg-sky-500" : "border-slate-300"
+                )}
+              >
+                {selected && <div className="w-2 h-2 rounded-full bg-white" />}
+              </div>
             </button>
           );
         })}

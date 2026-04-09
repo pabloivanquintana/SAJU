@@ -19,7 +19,7 @@ interface StepIndicatorProps {
 
 export function StepIndicator({ currentStep, onStepClick, completedUpTo }: StepIndicatorProps) {
   return (
-    <div className="flex items-center justify-between w-full px-2 py-3">
+    <div className="flex items-center justify-between w-full px-1 py-2">
       {STEPS.map((step, index) => {
         const isCompleted = completedUpTo != null && step.id < completedUpTo;
         const isCurrent = step.id === currentStep;
@@ -33,20 +33,20 @@ export function StepIndicator({ currentStep, onStepClick, completedUpTo }: StepI
             >
               <div
                 className={cn(
-                  "w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-200",
-                  isCompleted && "bg-emerald-500 text-white cursor-pointer hover:bg-emerald-600",
-                  isCurrent && "bg-blue-600 text-white shadow-md shadow-blue-200",
-                  !isCompleted && !isCurrent && "bg-gray-100 text-gray-400"
+                  "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-200",
+                  isCompleted && "bg-emerald-500 text-white cursor-pointer hover:bg-emerald-600 shadow-sm shadow-emerald-200",
+                  isCurrent && "bg-sky-600 text-white shadow-md shadow-sky-200",
+                  !isCompleted && !isCurrent && "bg-slate-100 text-slate-400"
                 )}
               >
-                {isCompleted ? <Check className="w-4 h-4" /> : step.id}
+                {isCompleted ? <Check className="w-3.5 h-3.5" /> : step.id}
               </div>
               <span
                 className={cn(
                   "text-xs font-medium hidden sm:block",
-                  isCurrent && "text-blue-600",
+                  isCurrent && "text-sky-600",
                   isCompleted && "text-emerald-600",
-                  !isCurrent && !isCompleted && "text-gray-400"
+                  !isCurrent && !isCompleted && "text-slate-400"
                 )}
               >
                 {step.label}
@@ -55,8 +55,8 @@ export function StepIndicator({ currentStep, onStepClick, completedUpTo }: StepI
             {index < STEPS.length - 1 && (
               <div
                 className={cn(
-                  "h-0.5 flex-1 mx-1 transition-all duration-300",
-                  isCompleted ? "bg-emerald-400" : "bg-gray-200"
+                  "flex-1 mx-1 transition-all duration-300",
+                  isCompleted ? "h-px bg-emerald-400" : "h-px bg-slate-200"
                 )}
               />
             )}
