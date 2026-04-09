@@ -10,7 +10,7 @@ import {
   isStudentEligible,
   calculateTotal,
 } from "@/lib/calculator";
-import type { FamilyMemberType, PlanId } from "@/lib/calculator";
+import type { FamilyMemberType, PlanId, MemberPriceResult } from "@/lib/calculator";
 import { Plus, Trash2, Users, ChevronRight, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -58,7 +58,8 @@ export function Step5Family() {
         state.holderAge!,
         state.selectedPlan as PlanId,
         state.familyMembers,
-        state.monotributoCategory
+        state.monotributoCategory,
+        state.salary
       )
     : null;
 
@@ -98,6 +99,10 @@ export function Step5Family() {
           ? getMemberPrice(state.clientType, member.age, plan, state.monotributoCategory)
           : memberTotal;
 
+        const dependencyResult = isDependency && totals
+          ? totals.memberPrices.find((m) => m.member.id === member.id)
+          : null;
+
         const typeInfo = MEMBER_TYPES.find((m) => m.type === member.type);
         return (
           <div key={member.id} className="p-3 bg-white border border-gray-200 rounded-xl">
@@ -122,8 +127,14 @@ export function Step5Family() {
               )}
               {isDependency && (
                 <div className="text-right flex-shrink-0">
-                  <span className="text-xs text-amber-600 font-medium">Costo adicional</span>
-                  <div className="text-xs text-gray-400">a definir</div>
+                  {dependencyResult?.price != null ? (
+                    <>
+                      <div className="text-sm font-bold text-gray-800">{formatCurrency(dependencyResult.price)}</div>
+                      <div className="text-xs text-gray-400">/mes</div>
+                    </>
+                  ) : (
+                    <span className="text-xs text-gray-400 italic">Sin sueldo</span>
+                  )}
                 </div>
               )}
               <button
@@ -172,14 +183,12 @@ export function Step5Family() {
             )}
 
             {/* Family member rows */}
-            {totals.memberPrices.map(({ member, price, aporteMTPart, adicionalPart }) => (
+            {totals.memberPrices.map(({ member, price, aporteMTPart, adicionalPart, fullMemberPrice, saldoAplicado }: MemberPriceResult) => (
               <div key={member.id}>
                 <div className="flex justify-between text-sm">
                   <span className="text-blue-100">{member.name} ({member.age} años)</span>
                   <span className="font-semibold">
-                    {price != null
-                      ? formatCurrency(price)
-                      : isDependency ? "Costo a definir" : "—"}
+                    {price != null ? formatCurrency(price) : "—"}
                   </span>
                 </div>
                 {isMonotributo && aporteMTPart != null && adicionalPart != null && (
@@ -189,9 +198,15 @@ export function Step5Family() {
                     </span>
                   </div>
                 )}
-                {isDependency && (
+                {isDependency && fullMemberPrice != null && (
                   <div className="text-right">
-                    <span className="text-xs text-amber-300">genera costo adicional</span>
+                    {saldoAplicado != null && saldoAplicado > 0 ? (
+                      <span className="text-xs text-blue-300">
+                        plan {formatCurrency(fullMemberPrice)} − saldo {formatCurrency(saldoAplicado)}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-blue-300">precio según edad</span>
+                    )}
                   </div>
                 )}
               </div>
@@ -204,9 +219,9 @@ export function Step5Family() {
               <span className="text-2xl font-bold">{formatCurrency(totals.total)}</span>
             </div>
           )}
-          {isDependency && (
-            <p className="text-xs text-amber-300 mt-2 pt-2 border-t border-blue-500">
-              Titular accede por capacidad de aporte · Los familiares generan costo adicional (tabla pendiente de configuración)
+          {isDependency && totals.total == null && (
+            <p className="text-xs text-blue-300 mt-2 pt-2 border-t border-blue-500">
+              Ingresá el sueldo bruto para calcular el costo del grupo familiar
             </p>
           )}
           {isMonotributo && (
